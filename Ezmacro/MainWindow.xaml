@@ -7,6 +7,39 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="180"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
 
+        <StackPanel Grid.Column="0" Background="#2D2D30" Margin="0">
+            <TextBlock Text="MACRO ENGINE" Foreground="White" FontSize="16" FontWeight="Bold" Margin="0,0,0,20" HorizontalAlignment="Center"/>
+
+            <Button Name="BtnRecord" Content="🔴 Record" Margin="0,5" Padding="8" Background="#FF4444" Foreground="White" FontWeight="Bold" Click="BtnRecord_Click"/>
+            <Button Name="BtnStop" Content="⏹️ Stop" Margin="0,5" Padding="8" Background="#555555" Foreground="White" FontWeight="Bold" Click="BtnStop_Click" IsEnabled="False"/>
+            <Button Name="BtnPlay" Content="▶️ Playback" Margin="0,5,0,25" Padding="8" Background="#4CAF50" Foreground="White" FontWeight="Bold" Click="BtnPlay_Click"/>
+
+            <Button Name="BtnSave" Content="💾 Save Macro" Margin="0,5" Padding="5" Click="BtnSave_Click"/>
+            <Button Name="BtnLoad" Content="📂 Load Macro" Margin="0,5" Padding="5" Click="BtnLoad_Click"/>
+        </StackPanel>
+
+        <Grid Grid.Column="1" Margin="5">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <TextBlock Text="Recorded Actions List" FontSize="14" FontWeight="Bold" Margin="0,0,0,10"/>
+
+            <DataGrid Name="MacroDataGrid" Grid.Row="1" AutoGenerateColumns="False" CanUserAddRows="False" Background="White" RowHeaderWidth="0">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Action Type" Binding="{Binding ActionType}" Width="100"/>
+                    <DataGridTextColumn Header="Key / Detail" Binding="{Binding Detail}" Width="100"/>
+                    <DataGridTextColumn Header="X Pos" Binding="{Binding X}" Width="60"/>
+                    <DataGridTextColumn Header="Y Pos" Binding="{Binding Y}" Width="60"/>
+                    <DataGridTextColumn Header="Delay (ms)" Binding="{Binding Delay}" Width="*"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Grid>
     </Grid>
 </Window>
