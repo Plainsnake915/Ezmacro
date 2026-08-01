@@ -2,6 +2,7 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
 using System.Windows;
 using Microsoft.Win32;
@@ -17,15 +18,29 @@ namespace Ezmacro
         public ObservableCollection<MacroEvent> MacroActions { get; set; } = new ObservableCollection<MacroEvent>();
         private TaskPoolGlobalHook _hook;
         private Stopwatch _stopwatch = new Stopwatch();
+        private bool _isRecording = false;
+        public MacroSettings Settings { get; set; } = new MacroSettings();
 
         public MainWindow()
         {
             InitializeComponent();
+            
             // Bind our collection to the DataGrid UI
             MacroDataGrid.ItemsSource = MacroActions;
+            _hook = new TaskPoolGlobalHook();
+            _hook.KeyPressed += OnGlobalKeyPressed;
+            _hook.KeyReleased += OnGlobalKeyReleased;
+
+            _hook.MousePressed += OnGlobalMousePressed;
+            _hook.MouseReleased += OnGlobalMouseReleased;
+
+
+            Task.Run(() => _hook.Run());
+
         }
         private void OnGlobalKeyPressed(object sender, KeyboardHookEventArgs e)
         {
+            if (!_isRecording) { return; } // Ignore key presses if we're not recording
             long elapsed = _stopwatch.ElapsedMilliseconds;
             _stopwatch.Restart(); // Reset timer for the next sequential object
 
@@ -48,6 +63,25 @@ namespace Ezmacro
         }
         private void OnGlobalKeyReleased(object sender, KeyboardHookEventArgs e)
         {
+            if(e.Data.KeyCode == Settings.RecordStopKey)
+            {
+                if (_isRecording)
+                {
+                    BtnStop_Click(sender, null); // Stop recording if the designated key is released
+                    return;
+                }
+                else
+                {
+                    BtnRecord_Click(sender, null); // Start recording if the designated key is released
+                    return;
+                }
+            }
+            if(e.Data.KeyCode == Settings.PlaybackKey)
+            {
+                BtnPlay_Click(sender, null); // Start playback if the designated key is released
+                return;
+            }
+            if (!_isRecording) { return; } // Ignore key releases if we're not recording
             long elapsed = _stopwatch.ElapsedMilliseconds;
             _stopwatch.Restart();
             Application.Current.Dispatcher.Invoke(() =>
@@ -66,6 +100,7 @@ namespace Ezmacro
 
         private void OnGlobalMousePressed(object sender, MouseHookEventArgs e)
         {
+            if (!_isRecording) { return; }
             long elapsed = _stopwatch.ElapsedMilliseconds;
             _stopwatch.Restart();
             Application.Current.Dispatcher.Invoke(() =>
@@ -84,6 +119,7 @@ namespace Ezmacro
 
         private void OnGlobalMouseReleased(object sender, MouseHookEventArgs e)
         {
+            if (!_isRecording) { return; }
             long elapsed = _stopwatch.ElapsedMilliseconds;
             _stopwatch.Restart();
             Application.Current.Dispatcher.Invoke(() =>
@@ -101,128 +137,125 @@ namespace Ezmacro
         }
 
 
-        private void BtnRecord_Click(object sender, RoutedEventArgs e)
+        private async void BtnRecord_Click(object sender, RoutedEventArgs e)
         {
-            BtnRecord.IsEnabled = false;
-            BtnStop.IsEnabled = true;
-            BtnPlay.IsEnabled = false;
-            MacroActions.Clear();
-            _stopwatch.Restart();
+            await Application.Current.Dispatcher.Invoke(async () =>
+            {
+                BtnRecord.IsEnabled = false;
+                BtnStop.IsEnabled = true;
+                BtnPlay.IsEnabled = false;
+                await Task.Delay(100); // Small delay to ensure the button state updates before recording starts
+                _isRecording = true;
+                MacroActions.Clear();
+                _stopwatch.Restart();
+            });
+        }
 
-            // TODO: Start SharpHook global listening here
-            _hook = new TaskPoolGlobalHook();
-            _hook.KeyPressed += OnGlobalKeyPressed;
-            _hook.KeyReleased += OnGlobalKeyReleased;
-
-            _hook.MousePressed += OnGlobalMousePressed;
-            _hook.MouseReleased += OnGlobalMouseReleased;
+        private async void BtnStop_Click(object sender, RoutedEventArgs e)
+        {
+            await Application.Current.Dispatcher.Invoke(async () =>
+            {
+                BtnRecord.IsEnabled = true;
+                BtnStop.IsEnabled = false;
+                BtnPlay.IsEnabled = true;
+                _isRecording = false;
+                _stopwatch.Stop();
+                int lastIndex = MacroActions.Count - 1;
+                MacroActions[lastIndex].ActionType = "wait";
+                MacroActions[lastIndex].Detail = "delay";
+                MacroDataGrid.Items.Refresh(); // Refresh the DataGrid to show the updated last row
+            });
+            
             
 
-
-            Task.Run(() => _hook.Run());
         }
 
-        private void BtnStop_Click(object sender, RoutedEventArgs e)
-        {
-            BtnRecord.IsEnabled = true;
-            BtnStop.IsEnabled = false;
-            BtnPlay.IsEnabled = true;
-            _stopwatch.Stop();
-
-            // TODO: Stop SharpHook listening here
-            if (_hook != null)
-            {
-                // OOP Cleanup: Unsubscribe from the event streams to prevent memory leaks
-                _hook.KeyPressed -= OnGlobalKeyPressed;
-                _hook.KeyReleased -= OnGlobalKeyReleased;
-                _hook.MouseClicked -= OnGlobalMousePressed;
-                _hook.MouseReleased -= OnGlobalMouseReleased;
-
-                // Destroy the hook instance and release OS resources
-                _hook.Dispose();
-                _hook = null;
-            }
-        }
 
         private async void BtnPlay_Click(object sender, RoutedEventArgs e)
         {
-            // TODO: Iterate through MacroActions and simulate inputs
-            // 1. Check if we actually have any actions recorded to play back
-            if (MacroActions.Count == 0)
+            await Application.Current.Dispatcher.Invoke(async () =>
             {
-                MessageBox.Show("No macro recorded yet! Record something first.", "Playback Info");
-                return;
-            }
-
-            // 2. Disable UI buttons so the user can't click things while the macro is running
-            BtnRecord.IsEnabled = false;
-            BtnPlay.IsEnabled = false;
-
-            // 3. Minimize our app window so the macro inputs go to the desktop/other apps instead of clicking inside our own UI!
-            this.WindowState = WindowState.Minimized;
-
-            // Give the window a brief moment (300ms) to finish minimizing before starting
-            await Task.Delay(300);
-
-            var simulator = new EventSimulator();
-
-            // 5. Loop through our encapsulated MacroEvent data objects on a background thread
-            await Task.Run(async () =>
-            {
-                foreach (var action in MacroActions)
+                if (MacroActions.Count == 0)
                 {
-                    // Wait for the exact recorded delay before performing the action
-                    if (action.Delay > 0)
-                    {
-                        await Task.Delay((int)action.Delay);
-                    }
-
-                    try
-                    {
-                        // Execute action based on its type
-                        if (action.ActionType == "KeyPress")
-                        {
-                            if (Enum.TryParse(action.Detail, out KeyCode code))
-                            {
-                                simulator.SimulateKeyPress(code);
-                            }
-                        }
-                        else if(action.ActionType == "KeyRelease")
-                        {
-                            if (Enum.TryParse(action.Detail, out KeyCode code))
-                            {
-                                simulator.SimulateKeyRelease(code);
-                            }
-                        }
-                        
-                        else if(action.ActionType == "MousePress")
-                        {
-                            if (Enum.TryParse(action.Detail, out MouseButton button))
-                            {
-                                simulator.SimulateMouseMovement((short)action.X, (short)action.Y);
-                                simulator.SimulateMousePress(button);
-                            }
-                        }
-                        else if (action.ActionType == "MouseRelease")
-                        {
-                            if (Enum.TryParse(action.Detail, out MouseButton button))
-                            {
-                                simulator.SimulateMouseMovement((short)action.X, (short)action.Y);
-                                simulator.SimulateMouseRelease(button);
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"Failed to simulate action: {ex.Message}");
-                    }
+                    MessageBox.Show("No macro recorded yet! Record something first.", "Playback Info");
+                    return;
                 }
+
+
+                BtnRecord.IsEnabled = false;
+                BtnPlay.IsEnabled = false;
+
+
+                this.WindowState = WindowState.Minimized;
+
+
+                await Task.Delay(300);
+
+                var simulator = new EventSimulator();
+
+                await Task.Run(async () =>
+                {
+                    foreach (var action in MacroActions)
+                    {
+
+                        if (action.Delay > 0)
+                        {
+                            await Task.Delay((int)action.Delay);
+                        }
+
+                        try
+                        {
+                            // Execute action based on its type
+                            if (action.ActionType == "wait")
+                            {
+                                continue;
+                            }
+                            if (action.ActionType == "KeyPress")
+                            {
+                                if (Enum.TryParse(action.Detail, out KeyCode code))
+                                {
+                                    simulator.SimulateKeyPress(code);
+                                }
+                            }
+                            else if (action.ActionType == "KeyRelease")
+                            {
+                                if (Enum.TryParse(action.Detail, out KeyCode code))
+                                {
+                                    simulator.SimulateKeyRelease(code);
+                                }
+                            }
+
+                            else if (action.ActionType == "MousePress")
+                            {
+                                if (Enum.TryParse(action.Detail, out MouseButton button))
+                                {
+                                    simulator.SimulateMouseMovement((short)action.X, (short)action.Y);
+                                    simulator.SimulateMousePress(button);
+                                }
+                            }
+                            else if (action.ActionType == "MouseRelease")
+                            {
+                                if (Enum.TryParse(action.Detail, out MouseButton button))
+                                {
+                                    simulator.SimulateMouseMovement((short)action.X, (short)action.Y);
+                                    simulator.SimulateMouseRelease(button);
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine($"Failed to simulate action: {ex.Message}");
+                        }
+                    }
+                });
+
+                // 6. Restore the application window when playback finishes
+                this.WindowState = WindowState.Normal;
+                BtnRecord.IsEnabled = true;
+                BtnPlay.IsEnabled = true;
             });
 
-            // 6. Restore the application window when playback finishes
-            this.WindowState = WindowState.Normal;
-            BtnRecord.IsEnabled = true;
-            BtnPlay.IsEnabled = true;
+            
         }
 
         private void BtnSave_Click(object sender, RoutedEventArgs e)
@@ -317,13 +350,48 @@ namespace Ezmacro
                 }
             }
         }
+        private void BtnSettings_Click(object sender, RoutedEventArgs e)
+        {
+            // Pass the main window's settings instance over to the settings popup window
+            SettingsWindow settingsWindow = new SettingsWindow(this.Settings);
+            settingsWindow.Owner = this; // Makes it pop up directly over the main window
+            settingsWindow.ShowDialog();
+        }
 
-        
+
 
         protected override void OnClosed(EventArgs e)
         {
             _hook?.Dispose();
             base.OnClosed(e);
+        }
+    }
+    public partial class SettingsWindow : Window
+    {
+        private MacroSettings _settings;
+
+        public SettingsWindow(MacroSettings currentSettings)
+        {
+            InitializeComponent();
+            _settings = currentSettings;
+
+            // Populate the dropdown boxes with all available keyboard keys
+            var allKeys = Enum.GetValues(typeof(KeyCode));
+            ComboRecordKey.ItemsSource = allKeys;
+            ComboPlayKey.ItemsSource = allKeys;
+
+            // Select the keys currently stored in our settings state
+            ComboRecordKey.SelectedItem = _settings.RecordStopKey;
+            ComboPlayKey.SelectedItem = _settings.PlaybackKey;
+        }
+
+        private void BtnSaveSettings_Click(object sender, RoutedEventArgs e)
+        {
+            // Save choices back to the configuration object
+            _settings.RecordStopKey = (KeyCode)ComboRecordKey.SelectedItem;
+            _settings.PlaybackKey = (KeyCode)ComboPlayKey.SelectedItem;
+
+            this.DialogResult = true; // Closes the window
         }
     }
     public class MacroEvent
@@ -333,5 +401,13 @@ namespace Ezmacro
         public int X { get; set; }             // Mouse X coordinate
         public int Y { get; set; }             // Mouse Y coordinate
         public long Delay { get; set; }        // Milliseconds since last action
+    }
+
+    public class MacroSettings
+    {
+        public bool AutoMinimizeOnPlayback { get; set; } = true;
+        public int PlaybackSpeedMultiplier { get; set; } = 1; // 1x speed by default
+        public KeyCode RecordStopKey { get; set; } = KeyCode.VcF10;
+        public KeyCode PlaybackKey { get; set; } = KeyCode.VcF11;
     }
 }

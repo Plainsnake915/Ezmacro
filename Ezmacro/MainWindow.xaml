@@ -16,11 +16,12 @@
             <TextBlock Text="MACRO ENGINE" Foreground="White" FontSize="16" FontWeight="Bold" Margin="0,0,0,20" HorizontalAlignment="Center"/>
 
             <Button Name="BtnRecord" Content="🔴 Record" Margin="0,5" Padding="8" Background="#FF4444" Foreground="White" FontWeight="Bold" Click="BtnRecord_Click"/>
-            <Button Name="BtnStop" Content="⏹️ Stop" Margin="0,5" Padding="8" Background="#555555" Foreground="White" FontWeight="Bold" Click="BtnStop_Click" IsEnabled="False"/>
+            <Button Name="BtnStop" Content="⏹️ Stop" Margin="0,5" Padding="8" Background="#555555" Foreground="White" FontWeight="Bold" PreviewMouseDown="BtnStop_Click" IsEnabled="False"/>
             <Button Name="BtnPlay" Content="▶️ Playback" Margin="0,5,0,25" Padding="8" Background="#4CAF50" Foreground="White" FontWeight="Bold" Click="BtnPlay_Click"/>
 
             <Button Name="BtnSave" Content="💾 Save Macro" Margin="0,5" Padding="5" Click="BtnSave_Click"/>
             <Button Name="BtnLoad" Content="📂 Load Macro" Margin="0,5" Padding="5" Click="BtnLoad_Click"/>
+            <Button Name="BtnSettings" Content="Settings" Margin="0,5" Padding="5" Click="BtnSettings_Click"/>
         </StackPanel>
 
         <Grid Grid.Column="1" Margin="5">
