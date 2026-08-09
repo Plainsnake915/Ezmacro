@@ -5,6 +5,7 @@ using System.IO;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
 using System.Windows;
+using System.Windows.Media;
 using Microsoft.Win32;
 using SharpHook;
 using SharpHook.Data;
@@ -19,8 +20,25 @@ namespace Ezmacro
         private TaskPoolGlobalHook _hook;
         private Stopwatch _stopwatch = new Stopwatch();
         private bool _isRecording = false;
+        private GlowOverlayWindow _overlay;
         public MacroSettings Settings { get; set; } = new MacroSettings();
-
+        private void ShowGlow(Color color)
+        {
+            if (_overlay == null)
+            {
+                _overlay = new GlowOverlayWindow();
+                
+            }
+            _overlay.SetGlowColor(color);
+            _overlay.Show();
+        }
+        private void HideGlow()
+        {
+            if (_overlay != null)
+            {
+                _overlay.Hide();
+            }
+        }
         public MainWindow()
         {
             InitializeComponent();
@@ -410,4 +428,5 @@ namespace Ezmacro
         public KeyCode RecordStopKey { get; set; } = KeyCode.VcF10;
         public KeyCode PlaybackKey { get; set; } = KeyCode.VcF11;
     }
+
 }
