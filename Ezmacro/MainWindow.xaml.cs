@@ -5,6 +5,7 @@ using System.IO;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
 using System.Windows;
+using System.Windows.Media;
 using Microsoft.Win32;
 using SharpHook;
 using SharpHook.Data;
@@ -19,8 +20,25 @@ namespace Ezmacro
         private TaskPoolGlobalHook _hook;
         private Stopwatch _stopwatch = new Stopwatch();
         private bool _isRecording = false;
+        private GlowOverlayWindow _overlay;
         public MacroSettings Settings { get; set; } = new MacroSettings();
-
+        private void ShowGlow(Color color)
+        {
+            if (_overlay == null)
+            {
+                _overlay = new GlowOverlayWindow();
+                
+            }
+            _overlay.SetGlowColor(color);
+            _overlay.Show();
+        }
+        private void HideGlow()
+        {
+            if (_overlay != null)
+            {
+                _overlay.Hide();
+            }
+        }
         public MainWindow()
         {
             InitializeComponent();
@@ -145,6 +163,7 @@ namespace Ezmacro
                 BtnStop.IsEnabled = true;
                 BtnPlay.IsEnabled = false;
                 await Task.Delay(100); // Small delay to ensure the button state updates before recording starts
+                ShowGlow(Colors.Red); // Show red glow during recording
                 _isRecording = true;
                 MacroActions.Clear();
                 _stopwatch.Restart();
@@ -158,6 +177,7 @@ namespace Ezmacro
                 BtnRecord.IsEnabled = true;
                 BtnStop.IsEnabled = false;
                 BtnPlay.IsEnabled = true;
+                HideGlow(); // Hide the glow overlay when recording stops
                 _isRecording = false;
                 _stopwatch.Stop();
                 int lastIndex = MacroActions.Count - 1;
@@ -192,6 +212,7 @@ namespace Ezmacro
                 await Task.Delay(300);
 
                 var simulator = new EventSimulator();
+                ShowGlow(Colors.Green); // Show green glow during playback
 
                 await Task.Run(async () =>
                 {
@@ -250,6 +271,7 @@ namespace Ezmacro
                 });
 
                 // 6. Restore the application window when playback finishes
+                HideGlow(); // Hide the glow overlay after playback
                 this.WindowState = WindowState.Normal;
                 BtnRecord.IsEnabled = true;
                 BtnPlay.IsEnabled = true;
@@ -410,4 +432,5 @@ namespace Ezmacro
         public KeyCode RecordStopKey { get; set; } = KeyCode.VcF10;
         public KeyCode PlaybackKey { get; set; } = KeyCode.VcF11;
     }
+
 }
