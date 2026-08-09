@@ -56,6 +56,10 @@ namespace Ezmacro
             Task.Run(() => _hook.Run());
 
         }
+        private void OnGlobalMouseMoved(object sender, MouseHookEventArgs e)
+        {
+            // Optional: Handle mouse movement if needed
+        }
         private void OnGlobalKeyPressed(object sender, KeyboardHookEventArgs e)
         {
             if (!_isRecording) { return; } // Ignore key presses if we're not recording
