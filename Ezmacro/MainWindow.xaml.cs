@@ -451,6 +451,7 @@ namespace Ezmacro
             ComboPlayKey.SelectedItem = _settings.PlaybackKey;
             CheckBoxMouseRecording.IsChecked = _settings.MousetrackingEnabled;
             SliderSampling.Value = _settings.Samplingrate;
+            CheckBoxContinuosPlayback.IsChecked = _settings.ContinuosPlayback;
         }
 
         private void BtnSaveSettings_Click(object sender, RoutedEventArgs e)
@@ -460,6 +461,7 @@ namespace Ezmacro
             _settings.PlaybackKey = (KeyCode)ComboPlayKey.SelectedItem;
             _settings.MousetrackingEnabled = CheckBoxMouseRecording.IsChecked ?? true;
             _settings.Samplingrate = (long)SliderSampling.Value;
+            _settings.ContinuosPlayback = CheckBoxContinuosPlayback?.IsChecked ?? true;
 
             this.DialogResult = true; // Closes the window
         }
@@ -479,6 +481,7 @@ namespace Ezmacro
         public int PlaybackSpeedMultiplier { get; set; } = 1; // 1x speed by default
         public KeyCode RecordStopKey { get; set; } = KeyCode.VcF10;
         public KeyCode PlaybackKey { get; set; } = KeyCode.VcF11;
+        public bool ContinuosPlayback { get; set; } = false;
         public bool MousetrackingEnabled { get; set; } = true;
         public long Samplingrate { get; set; } = 50; // Default sampling rate for mouse tracking
     }

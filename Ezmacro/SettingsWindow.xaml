@@ -40,8 +40,12 @@
             </Slider>
             <TextBlock Text="{Binding ElementName=SliderSampling, Path=Value, StringFormat={}{0}ms}" VerticalAlignment="Center" Margin="5,0,0,0"/>
         </StackPanel>
+        <StackPanel Grid.Row="3" Margin="0,0,0,10">
+            <TextBlock Text="Continuos Playback" FontWeight="Bold" Margin="0,0,0,5"/>
+            <CheckBox x:Name="CheckBoxContinuosPlayback" Content="Continuos Playback" Margin="0,0,0,5"/>
+        </StackPanel>
         
 
-        <Button Grid.Row="3" Content="Save Hotkeys" Click="BtnSaveSettings_Click" Padding="10,5"/>
+        <Button Grid.Row="4" Content="Save Hotkeys" Click="BtnSaveSettings_Click" Padding="10,5"/>
     </Grid>
 </Window>
