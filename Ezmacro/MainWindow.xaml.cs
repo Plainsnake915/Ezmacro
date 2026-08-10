@@ -19,6 +19,7 @@ namespace Ezmacro
         public ObservableCollection<MacroEvent> MacroActions { get; set; } = new ObservableCollection<MacroEvent>();
         private TaskPoolGlobalHook _hook;
         private Stopwatch _stopwatch = new Stopwatch();
+        private Stopwatch _mouseSampleTimer = new Stopwatch();
         private bool _isRecording = false;
         private GlowOverlayWindow _overlay;
         public MacroSettings Settings { get; set; } = new MacroSettings();
@@ -51,6 +52,7 @@ namespace Ezmacro
 
             _hook.MousePressed += OnGlobalMousePressed;
             _hook.MouseReleased += OnGlobalMouseReleased;
+            _hook.MouseMoved += OnGlobalMouseMoved;
 
 
             Task.Run(() => _hook.Run());
@@ -59,6 +61,26 @@ namespace Ezmacro
         private void OnGlobalMouseMoved(object sender, MouseHookEventArgs e)
         {
             // Optional: Handle mouse movement if needed
+            if (!_isRecording || !Settings.MousetrackingEnabled) return;
+            if(!_mouseSampleTimer.IsRunning || _mouseSampleTimer.ElapsedMilliseconds >= Settings.Samplingrate)
+            {
+                _mouseSampleTimer.Restart();
+                long elapsed = _stopwatch.ElapsedMilliseconds;
+                _stopwatch.Restart();
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    MacroActions.Add(new MacroEvent
+                    {
+                        ActionType = "MouseMove",
+                        X = e.Data.X,
+                        Y = e.Data.Y,
+                        Delay = elapsed
+                    });
+                });
+            }
+            
+
+
         }
         private void OnGlobalKeyPressed(object sender, KeyboardHookEventArgs e)
         {
@@ -265,6 +287,10 @@ namespace Ezmacro
                                     simulator.SimulateMouseMovement((short)action.X, (short)action.Y);
                                     simulator.SimulateMouseRelease(button);
                                 }
+                            }
+                            else if (action.ActionType == "MouseMove")
+                            {
+                                simulator.SimulateMouseMovement((short)action.X, (short)action.Y);
                             }
                         }
                         catch (Exception ex)
