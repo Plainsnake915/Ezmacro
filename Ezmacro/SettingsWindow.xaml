@@ -23,6 +23,24 @@
             <TextBlock Text="Playback Hotkey:" FontWeight="Bold" Margin="0,0,0,5"/>
             <ComboBox x:Name="ComboPlayKey"/>
         </StackPanel>
+        
+        <StackPanel Grid.Row="2" Margin="0,0,0,10">
+            <TextBlock Text="Mouse recording" FontWeight="Bold" Margin="0,0,0,5"/>
+            <CheckBox x:Name="CheckBoxMouseRecording" Content="Enable Mouse Recording" Margin="0,0,0,5"/>
+            <TextBlock Text="Sampling Interval:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+            <Slider x:Name="SliderSampling" Minimum="10" Maximum="200" Value="50" TickFrequency="10" IsSnapToTickEnabled="True" Width="100" VerticalAlignment="Bottom" RenderTransformOrigin="0.5,0.5">
+                <Slider.RenderTransform>
+                    <TransformGroup>
+                        <ScaleTransform ScaleX="1"/>
+                        <SkewTransform/>
+                        <RotateTransform Angle="0"/>
+                        <TranslateTransform X="-350"/>
+                    </TransformGroup>
+                </Slider.RenderTransform>
+            </Slider>
+            <TextBlock Text="{Binding ElementName=SliderSampling, Path=Value, StringFormat={}{0}ms}" VerticalAlignment="Center" Margin="5,0,0,0"/>
+        </StackPanel>
+        
 
         <Button Grid.Row="3" Content="Save Hotkeys" Click="BtnSaveSettings_Click" Padding="10,5"/>
     </Grid>

@@ -19,6 +19,7 @@ namespace Ezmacro
         public ObservableCollection<MacroEvent> MacroActions { get; set; } = new ObservableCollection<MacroEvent>();
         private TaskPoolGlobalHook _hook;
         private Stopwatch _stopwatch = new Stopwatch();
+        private Stopwatch _mouseSampleTimer = new Stopwatch();
         private bool _isRecording = false;
         private GlowOverlayWindow _overlay;
         public MacroSettings Settings { get; set; } = new MacroSettings();
@@ -51,9 +52,34 @@ namespace Ezmacro
 
             _hook.MousePressed += OnGlobalMousePressed;
             _hook.MouseReleased += OnGlobalMouseReleased;
+            _hook.MouseMoved += OnGlobalMouseMoved;
 
 
             Task.Run(() => _hook.Run());
+
+        }
+        private void OnGlobalMouseMoved(object sender, MouseHookEventArgs e)
+        {
+            // Optional: Handle mouse movement if needed
+            if (!_isRecording || !Settings.MousetrackingEnabled) return;
+            if(!_mouseSampleTimer.IsRunning || _mouseSampleTimer.ElapsedMilliseconds >= Settings.Samplingrate)
+            {
+                _mouseSampleTimer.Restart();
+                long elapsed = _stopwatch.ElapsedMilliseconds;
+                _stopwatch.Restart();
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    MacroActions.Add(new MacroEvent
+                    {
+                        ActionType = "MouseMove",
+                        X = e.Data.X,
+                        Y = e.Data.Y,
+                        Delay = elapsed
+                    });
+                });
+            }
+            
+
 
         }
         private void OnGlobalKeyPressed(object sender, KeyboardHookEventArgs e)
@@ -262,6 +288,10 @@ namespace Ezmacro
                                     simulator.SimulateMouseRelease(button);
                                 }
                             }
+                            else if (action.ActionType == "MouseMove")
+                            {
+                                simulator.SimulateMouseMovement((short)action.X, (short)action.Y);
+                            }
                         }
                         catch (Exception ex)
                         {
@@ -405,6 +435,8 @@ namespace Ezmacro
             // Select the keys currently stored in our settings state
             ComboRecordKey.SelectedItem = _settings.RecordStopKey;
             ComboPlayKey.SelectedItem = _settings.PlaybackKey;
+            CheckBoxMouseRecording.IsChecked = _settings.MousetrackingEnabled;
+            SliderSampling.Value = _settings.Samplingrate;
         }
 
         private void BtnSaveSettings_Click(object sender, RoutedEventArgs e)
@@ -412,6 +444,8 @@ namespace Ezmacro
             // Save choices back to the configuration object
             _settings.RecordStopKey = (KeyCode)ComboRecordKey.SelectedItem;
             _settings.PlaybackKey = (KeyCode)ComboPlayKey.SelectedItem;
+            _settings.MousetrackingEnabled = CheckBoxMouseRecording.IsChecked ?? true;
+            _settings.Samplingrate = (long)SliderSampling.Value;
 
             this.DialogResult = true; // Closes the window
         }
@@ -431,6 +465,8 @@ namespace Ezmacro
         public int PlaybackSpeedMultiplier { get; set; } = 1; // 1x speed by default
         public KeyCode RecordStopKey { get; set; } = KeyCode.VcF10;
         public KeyCode PlaybackKey { get; set; } = KeyCode.VcF11;
+        public bool MousetrackingEnabled { get; set; } = true;
+        public long Samplingrate { get; set; } = 50; // Default sampling rate for mouse tracking
     }
 
 }
