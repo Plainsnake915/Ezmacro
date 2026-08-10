@@ -21,6 +21,7 @@ namespace Ezmacro
         private Stopwatch _stopwatch = new Stopwatch();
         private Stopwatch _mouseSampleTimer = new Stopwatch();
         private bool _isRecording = false;
+        private bool _isPlaying = false;
         private GlowOverlayWindow _overlay;
         public MacroSettings Settings { get; set; } = new MacroSettings();
         private void ShowGlow(Color color)
@@ -107,7 +108,7 @@ namespace Ezmacro
         }
         private void OnGlobalKeyReleased(object sender, KeyboardHookEventArgs e)
         {
-            if(e.Data.KeyCode == Settings.RecordStopKey)
+            if(e.Data.KeyCode == Settings.RecordStopKey && !_isPlaying)
             {
                 if (_isRecording)
                 {
@@ -120,10 +121,18 @@ namespace Ezmacro
                     return;
                 }
             }
-            if(e.Data.KeyCode == Settings.PlaybackKey)
+            if(e.Data.KeyCode == Settings.PlaybackKey && !_isRecording)
             {
-                BtnPlay_Click(sender, null); // Start playback if the designated key is released
-                return;
+                if (_isPlaying)
+                {
+                    _isPlaying = false; // Stop playback if the designated key is released
+                    return;
+                }
+                else
+                {
+                    BtnPlay_Click(sender, null); // Start playback if the designated key is released
+                    return;
+                }
             }
             if (!_isRecording) { return; } // Ignore key releases if we're not recording
             long elapsed = _stopwatch.ElapsedMilliseconds;
@@ -233,6 +242,7 @@ namespace Ezmacro
 
 
                 this.WindowState = WindowState.Minimized;
+                _isPlaying = true;
 
 
                 await Task.Delay(300);
@@ -244,6 +254,7 @@ namespace Ezmacro
                 {
                     foreach (var action in MacroActions)
                     {
+                        if(!_isPlaying) break; // Stop playback if the user has stopped it
 
                         if (action.Delay > 0)
                         {
@@ -298,7 +309,10 @@ namespace Ezmacro
                             Debug.WriteLine($"Failed to simulate action: {ex.Message}");
                         }
                     }
+
                 });
+
+                _isPlaying = false;
 
                 // 6. Restore the application window when playback finishes
                 HideGlow(); // Hide the glow overlay after playback
