@@ -243,85 +243,94 @@ namespace Ezmacro
 
                 this.WindowState = WindowState.Minimized;
                 _isPlaying = true;
-
-
                 await Task.Delay(300);
-
-                var simulator = new EventSimulator();
                 ShowGlow(Colors.Green); // Show green glow during playback
+                playBack();
 
-                await Task.Run(async () =>
-                {
-                    foreach (var action in MacroActions)
-                    {
-                        if(!_isPlaying) break; // Stop playback if the user has stopped it
 
-                        if (action.Delay > 0)
-                        {
-                            await Task.Delay((int)action.Delay);
-                        }
+                
 
-                        try
-                        {
-                            // Execute action based on its type
-                            if (action.ActionType == "wait")
-                            {
-                                continue;
-                            }
-                            if (action.ActionType == "KeyPress")
-                            {
-                                if (Enum.TryParse(action.Detail, out KeyCode code))
-                                {
-                                    simulator.SimulateKeyPress(code);
-                                }
-                            }
-                            else if (action.ActionType == "KeyRelease")
-                            {
-                                if (Enum.TryParse(action.Detail, out KeyCode code))
-                                {
-                                    simulator.SimulateKeyRelease(code);
-                                }
-                            }
+                
 
-                            else if (action.ActionType == "MousePress")
-                            {
-                                if (Enum.TryParse(action.Detail, out MouseButton button))
-                                {
-                                    simulator.SimulateMouseMovement((short)action.X, (short)action.Y);
-                                    simulator.SimulateMousePress(button);
-                                }
-                            }
-                            else if (action.ActionType == "MouseRelease")
-                            {
-                                if (Enum.TryParse(action.Detail, out MouseButton button))
-                                {
-                                    simulator.SimulateMouseMovement((short)action.X, (short)action.Y);
-                                    simulator.SimulateMouseRelease(button);
-                                }
-                            }
-                            else if (action.ActionType == "MouseMove")
-                            {
-                                simulator.SimulateMouseMovement((short)action.X, (short)action.Y);
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            Debug.WriteLine($"Failed to simulate action: {ex.Message}");
-                        }
-                    }
-
-                });
-
-                _isPlaying = false;
-
-                // 6. Restore the application window when playback finishes
-                HideGlow(); // Hide the glow overlay after playback
-                this.WindowState = WindowState.Normal;
-                BtnRecord.IsEnabled = true;
-                BtnPlay.IsEnabled = true;
+               
             });
 
             
+        }
+        private async void playBack()
+        {
+            
+
+            var simulator = new EventSimulator();
+            
+
+            await Task.Run(async () =>
+            {
+                foreach (var action in MacroActions)
+                {
+                    if (!_isPlaying) break; // Stop playback if the user has stopped it
+
+                    if (action.Delay > 0)
+                    {
+                        await Task.Delay((int)action.Delay);
+                    }
+
+                    try
+                    {
+                        // Execute action based on its type
+                        if (action.ActionType == "wait")
+                        {
+                            continue;
+                        }
+                        if (action.ActionType == "KeyPress")
+                        {
+                            if (Enum.TryParse(action.Detail, out KeyCode code))
+                            {
+                                simulator.SimulateKeyPress(code);
+                            }
+                        }
+                        else if (action.ActionType == "KeyRelease")
+                        {
+                            if (Enum.TryParse(action.Detail, out KeyCode code))
+                            {
+                                simulator.SimulateKeyRelease(code);
+                            }
+                        }
+
+                        else if (action.ActionType == "MousePress")
+                        {
+                            if (Enum.TryParse(action.Detail, out MouseButton button))
+                            {
+                                simulator.SimulateMouseMovement((short)action.X, (short)action.Y);
+                                simulator.SimulateMousePress(button);
+                            }
+                        }
+                        else if (action.ActionType == "MouseRelease")
+                        {
+                            if (Enum.TryParse(action.Detail, out MouseButton button))
+                            {
+                                simulator.SimulateMouseMovement((short)action.X, (short)action.Y);
+                                simulator.SimulateMouseRelease(button);
+                            }
+                        }
+                        else if (action.ActionType == "MouseMove")
+                        {
+                            simulator.SimulateMouseMovement((short)action.X, (short)action.Y);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Failed to simulate action: {ex.Message}");
+                    }
+                }
+
+            });
+            _isPlaying = false; // Reset playback state after finishing
+                                
+            HideGlow(); // Hide the glow overlay after playback
+            this.WindowState = WindowState.Normal;
+            BtnRecord.IsEnabled = true;
+            BtnPlay.IsEnabled = true;
         }
 
         private void BtnSave_Click(object sender, RoutedEventArgs e)
@@ -461,7 +470,7 @@ namespace Ezmacro
             _settings.PlaybackKey = (KeyCode)ComboPlayKey.SelectedItem;
             _settings.MousetrackingEnabled = CheckBoxMouseRecording.IsChecked ?? true;
             _settings.Samplingrate = (long)SliderSampling.Value;
-            _settings.ContinuosPlayback = CheckBoxContinuosPlayback?.IsChecked ?? true;
+            _settings.ContinuosPlayback = CheckBoxContinuosPlayback.IsChecked ?? true;
 
             this.DialogResult = true; // Closes the window
         }

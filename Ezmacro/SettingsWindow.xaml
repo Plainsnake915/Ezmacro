@@ -10,6 +10,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -46,6 +47,6 @@
         </StackPanel>
         
 
-        <Button Grid.Row="4" Content="Save Hotkeys" Click="BtnSaveSettings_Click" Padding="10,5"/>
+        <Button Grid.Row="5" Content="Save Hotkeys" Click="BtnSaveSettings_Click" Padding="10,5"/>
     </Grid>
 </Window>
