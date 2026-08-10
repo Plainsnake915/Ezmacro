@@ -259,10 +259,10 @@ namespace Ezmacro
         }
         private async void playBack()
         {
-            
+
 
             var simulator = new EventSimulator();
-            
+
 
             await Task.Run(async () =>
             {
@@ -325,12 +325,19 @@ namespace Ezmacro
                 }
 
             });
-            _isPlaying = false; // Reset playback state after finishing
-                                
-            HideGlow(); // Hide the glow overlay after playback
-            this.WindowState = WindowState.Normal;
-            BtnRecord.IsEnabled = true;
-            BtnPlay.IsEnabled = true;
+            if (Settings.ContinuosPlayback && _isPlaying)
+            {
+                playBack(); // Recursively call playBack for continuous playback
+            }
+            else 
+            { 
+                _isPlaying = false; // Reset playback state after finishing
+
+                HideGlow(); // Hide the glow overlay after playback
+                this.WindowState = WindowState.Normal;
+                BtnRecord.IsEnabled = true;
+                BtnPlay.IsEnabled = true;
+            }
         }
 
         private void BtnSave_Click(object sender, RoutedEventArgs e)
