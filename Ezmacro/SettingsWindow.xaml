@@ -11,6 +11,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -45,7 +46,11 @@
             <TextBlock Text="Continuos Playback" FontWeight="Bold" Margin="0,0,0,5"/>
             <CheckBox x:Name="CheckBoxContinuosPlayback" Content="Continuos Playback" Margin="0,0,0,5"/>
         </StackPanel>
-        
+        <StackPanel Grid.Row="4" Margin="0,0,0,10">
+            <TextBlock Text="Auto Minimize" FontWeight="Bold" Margin="0,0,0,5"/>
+            <CheckBox x:Name="CheckBoxMinimize" Content="Auto Minimize" Margin="0,0,0,5"/>
+        </StackPanel>
+
 
         <Button Grid.Row="5" Content="Save Hotkeys" Click="BtnSaveSettings_Click" Padding="10,5"/>
     </Grid>

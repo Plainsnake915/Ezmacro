@@ -468,6 +468,7 @@ namespace Ezmacro
             CheckBoxMouseRecording.IsChecked = _settings.MousetrackingEnabled;
             SliderSampling.Value = _settings.Samplingrate;
             CheckBoxContinuosPlayback.IsChecked = _settings.ContinuosPlayback;
+            CheckBoxMinimize.IsChecked = _settings.AutoMinimize;
         }
 
         private void BtnSaveSettings_Click(object sender, RoutedEventArgs e)
@@ -478,6 +479,7 @@ namespace Ezmacro
             _settings.MousetrackingEnabled = CheckBoxMouseRecording.IsChecked ?? true;
             _settings.Samplingrate = (long)SliderSampling.Value;
             _settings.ContinuosPlayback = CheckBoxContinuosPlayback.IsChecked ?? true;
+            _settings.AutoMinimize = CheckBoxMinimize.IsChecked ?? true;
 
             this.DialogResult = true; // Closes the window
         }
@@ -493,7 +495,7 @@ namespace Ezmacro
 
     public class MacroSettings
     {
-        public bool AutoMinimizeOnPlayback { get; set; } = true;
+        public bool AutoMinimize { get; set; } = true;
         public int PlaybackSpeedMultiplier { get; set; } = 1; // 1x speed by default
         public KeyCode RecordStopKey { get; set; } = KeyCode.VcF10;
         public KeyCode PlaybackKey { get; set; } = KeyCode.VcF11;
