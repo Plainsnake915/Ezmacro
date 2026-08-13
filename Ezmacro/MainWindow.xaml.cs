@@ -198,6 +198,7 @@ namespace Ezmacro
                 BtnStop.IsEnabled = true;
                 BtnPlay.IsEnabled = false;
                 await Task.Delay(100); // Small delay to ensure the button state updates before recording starts
+                if(Settings.AutoMinimize) this.WindowState = WindowState.Minimized;
                 ShowGlow(Colors.Red); // Show red glow during recording
                 _isRecording = true;
                 MacroActions.Clear();
@@ -215,6 +216,10 @@ namespace Ezmacro
                 HideGlow(); // Hide the glow overlay when recording stops
                 _isRecording = false;
                 _stopwatch.Stop();
+                this.WindowState = WindowState.Normal;
+                this.Topmost = true; // Bring the window to the front
+                this.Activate(); // Ensure the window is active
+                this.Topmost = false; // Reset Topmost to allow other windows to be on top
                 int lastIndex = MacroActions.Count - 1;
                 MacroActions[lastIndex].ActionType = "wait";
                 MacroActions[lastIndex].Detail = "delay";
@@ -241,7 +246,7 @@ namespace Ezmacro
                 BtnPlay.IsEnabled = false;
 
 
-                this.WindowState = WindowState.Minimized;
+                if(Settings.AutoMinimize)this.WindowState = WindowState.Minimized;
                 _isPlaying = true;
                 await Task.Delay(300);
                 ShowGlow(Colors.Green); // Show green glow during playback
@@ -335,6 +340,9 @@ namespace Ezmacro
 
                 HideGlow(); // Hide the glow overlay after playback
                 this.WindowState = WindowState.Normal;
+                this.Topmost = true; // Bring the window to the front
+                this.Activate(); // Ensure the window is active
+                this.Topmost = false; // Reset Topmost to allow other windows to be on top
                 BtnRecord.IsEnabled = true;
                 BtnPlay.IsEnabled = true;
             }
