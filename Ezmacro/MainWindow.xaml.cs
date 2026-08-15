@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
-using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Data;
@@ -11,7 +9,6 @@ using System.Windows.Media;
 using Microsoft.Win32;
 using SharpHook;
 using SharpHook.Data;
-using SharpHook.Native;
 
 namespace Ezmacro
 {
@@ -31,7 +28,7 @@ namespace Ezmacro
             if (_overlay == null)
             {
                 _overlay = new GlowOverlayWindow();
-                
+
             }
             _overlay.SetGlowColor(color);
             _overlay.Show();
@@ -84,7 +81,7 @@ namespace Ezmacro
         {
             // Optional: Handle mouse movement if needed
             if (!_isRecording || !Settings.MousetrackingEnabled) return;
-            if(!_mouseSampleTimer.IsRunning || _mouseSampleTimer.ElapsedMilliseconds >= Settings.Samplingrate)
+            if (!_mouseSampleTimer.IsRunning || _mouseSampleTimer.ElapsedMilliseconds >= Settings.Samplingrate)
             {
                 _mouseSampleTimer.Restart();
                 long elapsed = _stopwatch.ElapsedMilliseconds;
@@ -100,7 +97,7 @@ namespace Ezmacro
                     });
                 });
             }
-            
+
 
 
         }
@@ -129,7 +126,7 @@ namespace Ezmacro
         }
         private void OnGlobalKeyReleased(object sender, KeyboardHookEventArgs e)
         {
-            if(e.Data.KeyCode == Settings.RecordStopKey && !_isPlaying)
+            if (e.Data.KeyCode == Settings.RecordStopKey && !_isPlaying)
             {
                 if (_isRecording)
                 {
@@ -142,7 +139,7 @@ namespace Ezmacro
                     return;
                 }
             }
-            if(e.Data.KeyCode == Settings.PlaybackKey && !_isRecording)
+            if (e.Data.KeyCode == Settings.PlaybackKey && !_isRecording)
             {
                 if (_isPlaying)
                 {
@@ -219,7 +216,7 @@ namespace Ezmacro
                 BtnStop.IsEnabled = true;
                 BtnPlay.IsEnabled = false;
                 await Task.Delay(100); // Small delay to ensure the button state updates before recording starts
-                if(Settings.AutoMinimize) this.WindowState = WindowState.Minimized;
+                if (Settings.AutoMinimize) this.WindowState = WindowState.Minimized;
                 ShowGlow(Colors.Red); // Show red glow during recording
                 _isRecording = true;
                 MacroActions.Clear();
@@ -251,8 +248,8 @@ namespace Ezmacro
                 MacroActions[lastIndex].Detail = "delay";
                 MacroDataGrid.Items.Refresh(); // Refresh the DataGrid to show the updated last row
             });
-            
-            
+
+
 
         }
 
@@ -273,21 +270,21 @@ namespace Ezmacro
                 BtnStop.IsEnabled = true;
 
 
-                if (Settings.AutoMinimize)this.WindowState = WindowState.Minimized;
+                if (Settings.AutoMinimize) this.WindowState = WindowState.Minimized;
                 _isPlaying = true;
                 await Task.Delay(300);
                 ShowGlow(Colors.Green); // Show green glow during playback
                 playBack();
 
 
-                
 
-                
 
-               
+
+
+
             });
 
-            
+
         }
         private async void playBack()
         {
@@ -361,8 +358,8 @@ namespace Ezmacro
             {
                 playBack(); // Recursively call playBack for continuous playback
             }
-            else 
-            { 
+            else
+            {
                 _isPlaying = false; // Reset playback state after finishing
 
                 HideGlow(); // Hide the glow overlay after playback
@@ -389,7 +386,7 @@ namespace Ezmacro
             {
                 // 2. Define our master folder path: Documents\MyMacros
                 string documentsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-                string dedicatedFolderPath = Path.Combine(documentsPath,"Ezmacro", "MyMacros");
+                string dedicatedFolderPath = Path.Combine(documentsPath, "Ezmacro", "MyMacros");
 
                 // 3. Make sure the folder physically exists before opening the window
                 if (!Directory.Exists(dedicatedFolderPath))
@@ -427,7 +424,7 @@ namespace Ezmacro
                 MessageBox.Show($"Failed to save macro: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-        
+
 
         private void BtnLoad_Click(object sender, RoutedEventArgs e)
         {
