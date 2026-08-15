@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
 using System.Windows;
+using System.Windows.Data;
 using System.Windows.Media;
 using Microsoft.Win32;
 using SharpHook;
@@ -21,6 +23,7 @@ namespace Ezmacro
         private Stopwatch _stopwatch = new Stopwatch();
         private Stopwatch _mouseSampleTimer = new Stopwatch();
         private bool _isRecording = false;
+        private bool _isPlaying = false;
         private GlowOverlayWindow _overlay;
         public MacroSettings Settings { get; set; } = new MacroSettings();
         private void ShowGlow(Color color)
@@ -43,7 +46,10 @@ namespace Ezmacro
         public MainWindow()
         {
             InitializeComponent();
-            
+            SetupDataGridFilter();
+            Settings = MacroSettings.Load(); // Load settings from disk
+
+
             // Bind our collection to the DataGrid UI
             MacroDataGrid.ItemsSource = MacroActions;
             _hook = new TaskPoolGlobalHook();
@@ -57,6 +63,22 @@ namespace Ezmacro
 
             Task.Run(() => _hook.Run());
 
+        }
+        private void SetupDataGridFilter()
+        {
+            ICollectionView view = CollectionViewSource.GetDefaultView(MacroActions);
+            view.Filter = item =>
+            {
+                if (item is MacroEvent macroEvent)
+                {
+                    if (macroEvent.ActionType == "MouseMove" && Settings.HideMouseMoves)
+                    {
+                        return false; // Hide mouse move events if the setting is enabled
+                    }
+                }
+                return true; // Show all other events
+
+            };
         }
         private void OnGlobalMouseMoved(object sender, MouseHookEventArgs e)
         {
@@ -107,7 +129,7 @@ namespace Ezmacro
         }
         private void OnGlobalKeyReleased(object sender, KeyboardHookEventArgs e)
         {
-            if(e.Data.KeyCode == Settings.RecordStopKey)
+            if(e.Data.KeyCode == Settings.RecordStopKey && !_isPlaying)
             {
                 if (_isRecording)
                 {
@@ -120,10 +142,18 @@ namespace Ezmacro
                     return;
                 }
             }
-            if(e.Data.KeyCode == Settings.PlaybackKey)
+            if(e.Data.KeyCode == Settings.PlaybackKey && !_isRecording)
             {
-                BtnPlay_Click(sender, null); // Start playback if the designated key is released
-                return;
+                if (_isPlaying)
+                {
+                    _isPlaying = false; // Stop playback if the designated key is released
+                    return;
+                }
+                else
+                {
+                    BtnPlay_Click(sender, null); // Start playback if the designated key is released
+                    return;
+                }
             }
             if (!_isRecording) { return; } // Ignore key releases if we're not recording
             long elapsed = _stopwatch.ElapsedMilliseconds;
@@ -189,6 +219,7 @@ namespace Ezmacro
                 BtnStop.IsEnabled = true;
                 BtnPlay.IsEnabled = false;
                 await Task.Delay(100); // Small delay to ensure the button state updates before recording starts
+                if(Settings.AutoMinimize) this.WindowState = WindowState.Minimized;
                 ShowGlow(Colors.Red); // Show red glow during recording
                 _isRecording = true;
                 MacroActions.Clear();
@@ -206,6 +237,15 @@ namespace Ezmacro
                 HideGlow(); // Hide the glow overlay when recording stops
                 _isRecording = false;
                 _stopwatch.Stop();
+                this.WindowState = WindowState.Normal;
+                this.Topmost = true; // Bring the window to the front
+                this.Activate(); // Ensure the window is active
+                this.Topmost = false; // Reset Topmost to allow other windows to be on top
+                if (_isPlaying)
+                {
+                    _isPlaying = false; // Stop playback if the user has stopped it
+                    return;
+                }
                 int lastIndex = MacroActions.Count - 1;
                 MacroActions[lastIndex].ActionType = "wait";
                 MacroActions[lastIndex].Detail = "delay";
@@ -230,84 +270,109 @@ namespace Ezmacro
 
                 BtnRecord.IsEnabled = false;
                 BtnPlay.IsEnabled = false;
+                BtnStop.IsEnabled = true;
 
 
-                this.WindowState = WindowState.Minimized;
-
-
+                if (Settings.AutoMinimize)this.WindowState = WindowState.Minimized;
+                _isPlaying = true;
                 await Task.Delay(300);
-
-                var simulator = new EventSimulator();
                 ShowGlow(Colors.Green); // Show green glow during playback
+                playBack();
 
-                await Task.Run(async () =>
-                {
-                    foreach (var action in MacroActions)
-                    {
 
-                        if (action.Delay > 0)
-                        {
-                            await Task.Delay((int)action.Delay);
-                        }
+                
 
-                        try
-                        {
-                            // Execute action based on its type
-                            if (action.ActionType == "wait")
-                            {
-                                continue;
-                            }
-                            if (action.ActionType == "KeyPress")
-                            {
-                                if (Enum.TryParse(action.Detail, out KeyCode code))
-                                {
-                                    simulator.SimulateKeyPress(code);
-                                }
-                            }
-                            else if (action.ActionType == "KeyRelease")
-                            {
-                                if (Enum.TryParse(action.Detail, out KeyCode code))
-                                {
-                                    simulator.SimulateKeyRelease(code);
-                                }
-                            }
+                
 
-                            else if (action.ActionType == "MousePress")
-                            {
-                                if (Enum.TryParse(action.Detail, out MouseButton button))
-                                {
-                                    simulator.SimulateMouseMovement((short)action.X, (short)action.Y);
-                                    simulator.SimulateMousePress(button);
-                                }
-                            }
-                            else if (action.ActionType == "MouseRelease")
-                            {
-                                if (Enum.TryParse(action.Detail, out MouseButton button))
-                                {
-                                    simulator.SimulateMouseMovement((short)action.X, (short)action.Y);
-                                    simulator.SimulateMouseRelease(button);
-                                }
-                            }
-                            else if (action.ActionType == "MouseMove")
-                            {
-                                simulator.SimulateMouseMovement((short)action.X, (short)action.Y);
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            Debug.WriteLine($"Failed to simulate action: {ex.Message}");
-                        }
-                    }
-                });
-
-                // 6. Restore the application window when playback finishes
-                HideGlow(); // Hide the glow overlay after playback
-                this.WindowState = WindowState.Normal;
-                BtnRecord.IsEnabled = true;
-                BtnPlay.IsEnabled = true;
+               
             });
 
             
+        }
+        private async void playBack()
+        {
+
+
+            var simulator = new EventSimulator();
+
+
+            await Task.Run(async () =>
+            {
+                foreach (var action in MacroActions)
+                {
+                    if (!_isPlaying) break; // Stop playback if the user has stopped it
+
+                    if (action.Delay > 0)
+                    {
+                        await Task.Delay((int)action.Delay);
+                    }
+
+                    try
+                    {
+                        // Execute action based on its type
+                        if (action.ActionType == "wait")
+                        {
+                            continue;
+                        }
+                        if (action.ActionType == "KeyPress")
+                        {
+                            if (Enum.TryParse(action.Detail, out KeyCode code))
+                            {
+                                simulator.SimulateKeyPress(code);
+                            }
+                        }
+                        else if (action.ActionType == "KeyRelease")
+                        {
+                            if (Enum.TryParse(action.Detail, out KeyCode code))
+                            {
+                                simulator.SimulateKeyRelease(code);
+                            }
+                        }
+
+                        else if (action.ActionType == "MousePress")
+                        {
+                            if (Enum.TryParse(action.Detail, out MouseButton button))
+                            {
+                                simulator.SimulateMouseMovement((short)action.X, (short)action.Y);
+                                simulator.SimulateMousePress(button);
+                            }
+                        }
+                        else if (action.ActionType == "MouseRelease")
+                        {
+                            if (Enum.TryParse(action.Detail, out MouseButton button))
+                            {
+                                simulator.SimulateMouseMovement((short)action.X, (short)action.Y);
+                                simulator.SimulateMouseRelease(button);
+                            }
+                        }
+                        else if (action.ActionType == "MouseMove")
+                        {
+                            simulator.SimulateMouseMovement((short)action.X, (short)action.Y);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Failed to simulate action: {ex.Message}");
+                    }
+                }
+
+            });
+            if (Settings.ContinuosPlayback && _isPlaying)
+            {
+                playBack(); // Recursively call playBack for continuous playback
+            }
+            else 
+            { 
+                _isPlaying = false; // Reset playback state after finishing
+
+                HideGlow(); // Hide the glow overlay after playback
+                this.WindowState = WindowState.Normal;
+                this.Topmost = true; // Bring the window to the front
+                this.Activate(); // Ensure the window is active
+                this.Topmost = false; // Reset Topmost to allow other windows to be on top
+                BtnRecord.IsEnabled = true;
+                BtnPlay.IsEnabled = true;
+            }
         }
 
         private void BtnSave_Click(object sender, RoutedEventArgs e)
@@ -437,6 +502,9 @@ namespace Ezmacro
             ComboPlayKey.SelectedItem = _settings.PlaybackKey;
             CheckBoxMouseRecording.IsChecked = _settings.MousetrackingEnabled;
             SliderSampling.Value = _settings.Samplingrate;
+            CheckBoxShowMouse.IsChecked = !_settings.HideMouseMoves;
+            CheckBoxContinuosPlayback.IsChecked = _settings.ContinuosPlayback;
+            CheckBoxMinimize.IsChecked = _settings.AutoMinimize;
         }
 
         private void BtnSaveSettings_Click(object sender, RoutedEventArgs e)
@@ -446,8 +514,16 @@ namespace Ezmacro
             _settings.PlaybackKey = (KeyCode)ComboPlayKey.SelectedItem;
             _settings.MousetrackingEnabled = CheckBoxMouseRecording.IsChecked ?? true;
             _settings.Samplingrate = (long)SliderSampling.Value;
+            _settings.HideMouseMoves = !(CheckBoxShowMouse.IsChecked ?? true);
+            _settings.ContinuosPlayback = CheckBoxContinuosPlayback.IsChecked ?? true;
+            _settings.AutoMinimize = CheckBoxMinimize.IsChecked ?? true;
+
+            _settings.Save(); // Persist the settings to disk
+
+
 
             this.DialogResult = true; // Closes the window
+            CollectionViewSource.GetDefaultView(((MainWindow)Owner).MacroActions).Refresh(); // Refresh the DataGrid filter in the main window
         }
     }
     public class MacroEvent
@@ -461,12 +537,59 @@ namespace Ezmacro
 
     public class MacroSettings
     {
-        public bool AutoMinimizeOnPlayback { get; set; } = true;
+        private static string SettingsFilePath => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+        "Ezmacro",
+        "settings.json"
+    );
+        public bool AutoMinimize { get; set; } = true;
         public int PlaybackSpeedMultiplier { get; set; } = 1; // 1x speed by default
         public KeyCode RecordStopKey { get; set; } = KeyCode.VcF10;
         public KeyCode PlaybackKey { get; set; } = KeyCode.VcF11;
+        public bool ContinuosPlayback { get; set; } = false;
         public bool MousetrackingEnabled { get; set; } = true;
+        public bool HideMouseMoves { get; set; } = false;
         public long Samplingrate { get; set; } = 50; // Default sampling rate for mouse tracking
+        public void Save()
+        {
+            try
+            {
+                string directory = Path.GetDirectoryName(SettingsFilePath);
+                if (!Directory.Exists(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
+
+                var options = new JsonSerializerOptions { WriteIndented = true };
+                string json = JsonSerializer.Serialize(this, options);
+                File.WriteAllText(SettingsFilePath, json);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Failed to save settings: {ex.Message}");
+            }
+        }
+        public static MacroSettings Load()
+        {
+            try
+            {
+                if (File.Exists(SettingsFilePath))
+                {
+                    string json = File.ReadAllText(SettingsFilePath);
+                    var loadedSettings = JsonSerializer.Deserialize<MacroSettings>(json);
+                    if (loadedSettings != null)
+                    {
+                        return loadedSettings;
+                    }
+                }
+            }
+            catch
+            {
+                // Fall back to default settings if file reading fails
+            }
+
+            return new MacroSettings();
+        }
     }
 
 }
