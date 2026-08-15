@@ -47,6 +47,8 @@ namespace Ezmacro
         {
             InitializeComponent();
             SetupDataGridFilter();
+            Settings = MacroSettings.Load(); // Load settings from disk
+
 
             // Bind our collection to the DataGrid UI
             MacroDataGrid.ItemsSource = MacroActions;
@@ -510,6 +512,10 @@ namespace Ezmacro
             _settings.ContinuosPlayback = CheckBoxContinuosPlayback.IsChecked ?? true;
             _settings.AutoMinimize = CheckBoxMinimize.IsChecked ?? true;
 
+            _settings.Save(); // Persist the settings to disk
+
+
+
             this.DialogResult = true; // Closes the window
             CollectionViewSource.GetDefaultView(((MainWindow)Owner).MacroActions).Refresh(); // Refresh the DataGrid filter in the main window
         }
@@ -525,6 +531,11 @@ namespace Ezmacro
 
     public class MacroSettings
     {
+        private static string SettingsFilePath => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+        "Ezmacro",
+        "settings.json"
+    );
         public bool AutoMinimize { get; set; } = true;
         public int PlaybackSpeedMultiplier { get; set; } = 1; // 1x speed by default
         public KeyCode RecordStopKey { get; set; } = KeyCode.VcF10;
@@ -533,6 +544,46 @@ namespace Ezmacro
         public bool MousetrackingEnabled { get; set; } = true;
         public bool HideMouseMoves { get; set; } = false;
         public long Samplingrate { get; set; } = 50; // Default sampling rate for mouse tracking
+        public void Save()
+        {
+            try
+            {
+                string directory = Path.GetDirectoryName(SettingsFilePath);
+                if (!Directory.Exists(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
+
+                var options = new JsonSerializerOptions { WriteIndented = true };
+                string json = JsonSerializer.Serialize(this, options);
+                File.WriteAllText(SettingsFilePath, json);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Failed to save settings: {ex.Message}");
+            }
+        }
+        public static MacroSettings Load()
+        {
+            try
+            {
+                if (File.Exists(SettingsFilePath))
+                {
+                    string json = File.ReadAllText(SettingsFilePath);
+                    var loadedSettings = JsonSerializer.Deserialize<MacroSettings>(json);
+                    if (loadedSettings != null)
+                    {
+                        return loadedSettings;
+                    }
+                }
+            }
+            catch
+            {
+                // Fall back to default settings if file reading fails
+            }
+
+            return new MacroSettings();
+        }
     }
 
 }
