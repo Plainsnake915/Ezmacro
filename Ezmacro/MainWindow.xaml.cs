@@ -241,6 +241,11 @@ namespace Ezmacro
                 this.Topmost = true; // Bring the window to the front
                 this.Activate(); // Ensure the window is active
                 this.Topmost = false; // Reset Topmost to allow other windows to be on top
+                if (_isPlaying)
+                {
+                    _isPlaying = false; // Stop playback if the user has stopped it
+                    return;
+                }
                 int lastIndex = MacroActions.Count - 1;
                 MacroActions[lastIndex].ActionType = "wait";
                 MacroActions[lastIndex].Detail = "delay";
@@ -265,9 +270,10 @@ namespace Ezmacro
 
                 BtnRecord.IsEnabled = false;
                 BtnPlay.IsEnabled = false;
+                BtnStop.IsEnabled = true;
 
 
-                if(Settings.AutoMinimize)this.WindowState = WindowState.Minimized;
+                if (Settings.AutoMinimize)this.WindowState = WindowState.Minimized;
                 _isPlaying = true;
                 await Task.Delay(300);
                 ShowGlow(Colors.Green); // Show green glow during playback
