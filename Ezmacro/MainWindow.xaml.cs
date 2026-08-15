@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
 using System.Windows;
+using System.Windows.Data;
 using System.Windows.Media;
 using Microsoft.Win32;
 using SharpHook;
@@ -44,7 +46,8 @@ namespace Ezmacro
         public MainWindow()
         {
             InitializeComponent();
-            
+            SetupDataGridFilter();
+
             // Bind our collection to the DataGrid UI
             MacroDataGrid.ItemsSource = MacroActions;
             _hook = new TaskPoolGlobalHook();
@@ -58,6 +61,22 @@ namespace Ezmacro
 
             Task.Run(() => _hook.Run());
 
+        }
+        private void SetupDataGridFilter()
+        {
+            ICollectionView view = CollectionViewSource.GetDefaultView(MacroActions);
+            view.Filter = item =>
+            {
+                if (item is MacroEvent macroEvent)
+                {
+                    if (macroEvent.ActionType == "MouseMove" && Settings.HideMouseMoves)
+                    {
+                        return false; // Hide mouse move events if the setting is enabled
+                    }
+                }
+                return true; // Show all other events
+
+            };
         }
         private void OnGlobalMouseMoved(object sender, MouseHookEventArgs e)
         {
@@ -475,6 +494,7 @@ namespace Ezmacro
             ComboPlayKey.SelectedItem = _settings.PlaybackKey;
             CheckBoxMouseRecording.IsChecked = _settings.MousetrackingEnabled;
             SliderSampling.Value = _settings.Samplingrate;
+            CheckBoxShowMouse.IsChecked = !_settings.HideMouseMoves;
             CheckBoxContinuosPlayback.IsChecked = _settings.ContinuosPlayback;
             CheckBoxMinimize.IsChecked = _settings.AutoMinimize;
         }
@@ -486,10 +506,12 @@ namespace Ezmacro
             _settings.PlaybackKey = (KeyCode)ComboPlayKey.SelectedItem;
             _settings.MousetrackingEnabled = CheckBoxMouseRecording.IsChecked ?? true;
             _settings.Samplingrate = (long)SliderSampling.Value;
+            _settings.HideMouseMoves = !(CheckBoxShowMouse.IsChecked ?? true);
             _settings.ContinuosPlayback = CheckBoxContinuosPlayback.IsChecked ?? true;
             _settings.AutoMinimize = CheckBoxMinimize.IsChecked ?? true;
 
             this.DialogResult = true; // Closes the window
+            CollectionViewSource.GetDefaultView(((MainWindow)Owner).MacroActions).Refresh(); // Refresh the DataGrid filter in the main window
         }
     }
     public class MacroEvent
@@ -509,6 +531,7 @@ namespace Ezmacro
         public KeyCode PlaybackKey { get; set; } = KeyCode.VcF11;
         public bool ContinuosPlayback { get; set; } = false;
         public bool MousetrackingEnabled { get; set; } = true;
+        public bool HideMouseMoves { get; set; } = false;
         public long Samplingrate { get; set; } = 50; // Default sampling rate for mouse tracking
     }
 
