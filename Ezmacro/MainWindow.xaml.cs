@@ -4,7 +4,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Input;
 using System.Windows.Media;
 using Microsoft.Win32;
 using SharpHook;
@@ -190,6 +192,7 @@ namespace Ezmacro
 
         private void OnGlobalMouseReleased(object sender, MouseHookEventArgs e)
         {
+
             if (!_isRecording) { return; }
             long elapsed = _stopwatch.ElapsedMilliseconds;
             _stopwatch.Restart();
@@ -328,7 +331,7 @@ namespace Ezmacro
 
                         else if (action.ActionType == "MousePress")
                         {
-                            if (Enum.TryParse(action.Detail, out MouseButton button))
+                            if (Enum.TryParse(action.Detail, out SharpHook.Data.MouseButton button))
                             {
                                 simulator.SimulateMouseMovement((short)action.X, (short)action.Y);
                                 simulator.SimulateMousePress(button);
@@ -336,7 +339,7 @@ namespace Ezmacro
                         }
                         else if (action.ActionType == "MouseRelease")
                         {
-                            if (Enum.TryParse(action.Detail, out MouseButton button))
+                            if (Enum.TryParse(action.Detail, out SharpHook.Data.MouseButton button))
                             {
                                 simulator.SimulateMouseMovement((short)action.X, (short)action.Y);
                                 simulator.SimulateMouseRelease(button);
@@ -472,6 +475,106 @@ namespace Ezmacro
             settingsWindow.ShowDialog();
         }
 
+        private void MacroDataGrid_Drop(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(typeof(MacroEvent)))
+            {
+                var droppedData = e.Data.GetData(typeof(MacroEvent)) as MacroEvent;
+                var targetRow = FindParent<DataGridRow>((DependencyObject)e.OriginalSource);
+
+                if (droppedData != null && targetRow != null)
+                {
+                    var targetData = targetRow.Item as MacroEvent;
+                    int oldIndex = MacroActions.IndexOf(droppedData);
+                    int newIndex = MacroActions.IndexOf(targetData);
+
+                    if (oldIndex != -1 && newIndex != -1 && oldIndex != newIndex)
+                    {
+                        MacroActions.Move(oldIndex, newIndex);
+                        MacroDataGrid.SelectedItem = droppedData;
+                    }
+                }
+            }
+        }
+        private static T FindParent<T>(DependencyObject child) where T : DependencyObject
+        {
+            DependencyObject parentObject = VisualTreeHelper.GetParent(child);
+
+            if (parentObject == null) return null;
+
+            if (parentObject is T parent)
+                return parent;
+
+            return FindParent<T>(parentObject);
+        }
+        private DataGridRow _currentDropTargetRow;
+
+        private void DataGridRow_DragOver(object sender, DragEventArgs e)
+        {
+            e.Effects = DragDropEffects.Move;
+
+            var targetRow = FindParent<DataGridRow>((DependencyObject)e.OriginalSource);
+
+            if (_currentDropTargetRow != null && _currentDropTargetRow != targetRow)
+            {
+                // Clear previous highlight
+                _currentDropTargetRow.BorderThickness = new Thickness(0);
+            }
+
+            if (targetRow != null)
+            {
+                _currentDropTargetRow = targetRow;
+                Point pos = e.GetPosition(targetRow);
+
+                // Highlight top or bottom border depending on insertion point
+                if (pos.Y < targetRow.ActualHeight / 2)
+                {
+                    targetRow.BorderThickness = new Thickness(0, 2, 0, 0); // Line above
+                    targetRow.BorderBrush = System.Windows.Media.Brushes.DodgerBlue;
+                }
+                else
+                {
+                    targetRow.BorderThickness = new Thickness(0, 0, 0, 2); // Line below
+                    targetRow.BorderBrush = System.Windows.Media.Brushes.DodgerBlue;
+                }
+            }
+        }
+        private void DataGridRow_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (e.LeftButton == MouseButtonState.Pressed && sender is DataGridRow row)
+            {
+
+                Point currentPos = e.GetPosition(null);
+                Vector diff = _dragStartPoint - currentPos;
+
+                // Check if user moved far enough to trigger drag
+                if (Math.Abs(diff.X) > SystemParameters.MinimumHorizontalDragDistance ||
+                    Math.Abs(diff.Y) > SystemParameters.MinimumVerticalDragDistance)
+                {
+
+
+
+                    var draggedItem = row.Item as MacroEvent;
+                    if (draggedItem != null)
+                    {
+                        row.Opacity = 0.5;
+                        DragDrop.DoDragDrop(row, draggedItem, DragDropEffects.Move);
+                        row.Opacity = 1.0;
+                    }
+                }
+                
+            }
+        }
+        private Point _dragStartPoint;
+
+        // Capture mouse position on row click
+        private void DataGridRow_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is DataGridRow row)
+            {
+                _dragStartPoint = e.GetPosition(null);
+            }
+        }
 
 
         protected override void OnClosed(EventArgs e)
@@ -479,6 +582,8 @@ namespace Ezmacro
             _hook?.Dispose();
             base.OnClosed(e);
         }
+
+        
     }
     
     

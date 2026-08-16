@@ -26,6 +26,7 @@ namespace Ezmacro
 
             // Populate the dropdown boxes with all available keyboard keys
             var allKeys = Enum.GetValues(typeof(KeyCode));
+            
             ComboRecordKey.ItemsSource = allKeys;
             ComboPlayKey.ItemsSource = allKeys;
 
