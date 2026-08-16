@@ -31,16 +31,86 @@
             </Grid.RowDefinitions>
 
             <TextBlock Text="Recorded Actions List" FontSize="14" FontWeight="Bold" Margin="0,0,0,10"/>
+            
 
-            <DataGrid Name="MacroDataGrid" Grid.Row="1" AutoGenerateColumns="False" CanUserAddRows="False" Background="White" RowHeaderWidth="0">
+            <DataGrid 
+                Name="MacroDataGrid" 
+                Grid.Row="1" 
+                AutoGenerateColumns="False" 
+                CanUserAddRows="False" 
+                CanUserDeleteRows="True" 
+                SelectionMode="Single"
+                GridLinesVisibility="Horizontal"
+                HeadersVisibility="Column"
+                AllowDrop="True"
+                CanUserSortColumns="False"
+                Drop="MacroDataGrid_Drop"
+                Background="White" 
+                RowHeaderWidth="0">
+                <DataGrid.RowStyle>
+                    <Style TargetType="DataGridRow">
+                        <EventSetter Event="DragOver" Handler="DataGridRow_DragOver"/>
+                        <EventSetter Event="PreviewMouseLeftButtonDown" Handler="DataGridRow_PreviewMouseLeftButtonDown"/>
+                        <EventSetter Event="MouseMove" Handler="DataGridRow_MouseMove"/>
+                        <Setter Property="Background" Value="Transparent" />
+                        <Setter Property="Margin" Value="0,1,0,1" />
+
+                        <Style.Triggers>
+                           <!-- Mouse Hover Highlight -->
+                           <Trigger Property="IsMouseOver" Value="True">
+                           <Setter Property="Background" Value="#E5F3FF" />
+                        </Trigger>
+
+                        <!-- Selected Row Highlight -->
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter Property="Background" Value="#007ACC" />
+                            <Setter Property="Foreground" Value="White" />
+                           <Setter Property="FontWeight" Value="SemiBold" />
+                        </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </DataGrid.RowStyle>
+
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Action Type" Binding="{Binding ActionType}" Width="100"/>
-                    <DataGridTextColumn Header="Key / Detail" Binding="{Binding Detail}" Width="100"/>
-                    <DataGridTextColumn Header="X Pos" Binding="{Binding X}" Width="60"/>
-                    <DataGridTextColumn Header="Y Pos" Binding="{Binding Y}" Width="60"/>
-                    <DataGridTextColumn Header="Delay (ms)" Binding="{Binding Delay}" Width="*"/>
+                    <DataGridComboBoxColumn Header="Action Type" 
+                                SelectedItemBinding="{Binding ActionType, UpdateSourceTrigger=PropertyChanged}" 
+                                Width="120">
+                        <DataGridComboBoxColumn.ItemsSource>
+                            <x:Array Type="{x:Type sys:String}" xmlns:sys="clr-namespace:System;assembly=mscorlib">
+                                <sys:String>KeyPress</sys:String>
+                                <sys:String>KeyRelease</sys:String>
+                                <sys:String>MousePress</sys:String>
+                                <sys:String>MouseRelease</sys:String>
+                                <sys:String>MouseMove</sys:String>
+                            </x:Array>
+                        </DataGridComboBoxColumn.ItemsSource>
+                    </DataGridComboBoxColumn>
+                    
+                    <DataGridTextColumn Header="Key / Detail" Binding="{Binding Detail, UpdateSourceTrigger=PropertyChanged}" Width="100"/>
+                    <DataGridTextColumn Header="X Pos" Binding="{Binding X, UpdateSourceTrigger=PropertyChanged}" Width="60"/>
+                    <DataGridTextColumn Header="Y Pos" Binding="{Binding Y,UpdateSourceTrigger=PropertyChanged}" Width="60"/>
+                    <DataGridTextColumn Header="Delay (ms)" Binding="{Binding Delay, UpdateSourceTrigger=PropertyChanged}" Width="100"/>
+                    <DataGridTemplateColumn Width="*"/>
+                    <DataGridTemplateColumn Header="Actions" Width="70">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Button Content="✕" 
+                            Width="30" 
+                            Height="22" 
+                            Background="#FFECEC" 
+                            Foreground="Red" 
+                            BorderBrush="Transparent"
+                            FontWeight="Bold"
+                            ToolTip="Remove this action"
+                            Click="BtnDeleteRow_Click"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
                 </DataGrid.Columns>
             </DataGrid>
+            <Button Content="Add Action..." Click="BtnOpenAddWindow_Click" Width="100"/>
+            
         </Grid>
+        
     </Grid>
 </Window>

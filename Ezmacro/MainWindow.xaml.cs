@@ -1,17 +1,16 @@
-﻿using System;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
-using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Input;
 using System.Windows.Media;
 using Microsoft.Win32;
 using SharpHook;
 using SharpHook.Data;
-using SharpHook.Native;
 
 namespace Ezmacro
 {
@@ -31,7 +30,7 @@ namespace Ezmacro
             if (_overlay == null)
             {
                 _overlay = new GlowOverlayWindow();
-                
+
             }
             _overlay.SetGlowColor(color);
             _overlay.Show();
@@ -84,7 +83,7 @@ namespace Ezmacro
         {
             // Optional: Handle mouse movement if needed
             if (!_isRecording || !Settings.MousetrackingEnabled) return;
-            if(!_mouseSampleTimer.IsRunning || _mouseSampleTimer.ElapsedMilliseconds >= Settings.Samplingrate)
+            if (!_mouseSampleTimer.IsRunning || _mouseSampleTimer.ElapsedMilliseconds >= Settings.Samplingrate)
             {
                 _mouseSampleTimer.Restart();
                 long elapsed = _stopwatch.ElapsedMilliseconds;
@@ -100,7 +99,7 @@ namespace Ezmacro
                     });
                 });
             }
-            
+
 
 
         }
@@ -129,7 +128,7 @@ namespace Ezmacro
         }
         private void OnGlobalKeyReleased(object sender, KeyboardHookEventArgs e)
         {
-            if(e.Data.KeyCode == Settings.RecordStopKey && !_isPlaying)
+            if (e.Data.KeyCode == Settings.RecordStopKey && !_isPlaying)
             {
                 if (_isRecording)
                 {
@@ -142,7 +141,7 @@ namespace Ezmacro
                     return;
                 }
             }
-            if(e.Data.KeyCode == Settings.PlaybackKey && !_isRecording)
+            if (e.Data.KeyCode == Settings.PlaybackKey && !_isRecording)
             {
                 if (_isPlaying)
                 {
@@ -193,6 +192,7 @@ namespace Ezmacro
 
         private void OnGlobalMouseReleased(object sender, MouseHookEventArgs e)
         {
+
             if (!_isRecording) { return; }
             long elapsed = _stopwatch.ElapsedMilliseconds;
             _stopwatch.Restart();
@@ -219,7 +219,7 @@ namespace Ezmacro
                 BtnStop.IsEnabled = true;
                 BtnPlay.IsEnabled = false;
                 await Task.Delay(100); // Small delay to ensure the button state updates before recording starts
-                if(Settings.AutoMinimize) this.WindowState = WindowState.Minimized;
+                if (Settings.AutoMinimize) this.WindowState = WindowState.Minimized;
                 ShowGlow(Colors.Red); // Show red glow during recording
                 _isRecording = true;
                 MacroActions.Clear();
@@ -251,8 +251,8 @@ namespace Ezmacro
                 MacroActions[lastIndex].Detail = "delay";
                 MacroDataGrid.Items.Refresh(); // Refresh the DataGrid to show the updated last row
             });
-            
-            
+
+
 
         }
 
@@ -273,21 +273,21 @@ namespace Ezmacro
                 BtnStop.IsEnabled = true;
 
 
-                if (Settings.AutoMinimize)this.WindowState = WindowState.Minimized;
+                if (Settings.AutoMinimize) this.WindowState = WindowState.Minimized;
                 _isPlaying = true;
                 await Task.Delay(300);
                 ShowGlow(Colors.Green); // Show green glow during playback
                 playBack();
 
 
-                
 
-                
 
-               
+
+
+
             });
 
-            
+
         }
         private async void playBack()
         {
@@ -331,7 +331,7 @@ namespace Ezmacro
 
                         else if (action.ActionType == "MousePress")
                         {
-                            if (Enum.TryParse(action.Detail, out MouseButton button))
+                            if (Enum.TryParse(action.Detail, out SharpHook.Data.MouseButton button))
                             {
                                 simulator.SimulateMouseMovement((short)action.X, (short)action.Y);
                                 simulator.SimulateMousePress(button);
@@ -339,7 +339,7 @@ namespace Ezmacro
                         }
                         else if (action.ActionType == "MouseRelease")
                         {
-                            if (Enum.TryParse(action.Detail, out MouseButton button))
+                            if (Enum.TryParse(action.Detail, out SharpHook.Data.MouseButton button))
                             {
                                 simulator.SimulateMouseMovement((short)action.X, (short)action.Y);
                                 simulator.SimulateMouseRelease(button);
@@ -361,8 +361,8 @@ namespace Ezmacro
             {
                 playBack(); // Recursively call playBack for continuous playback
             }
-            else 
-            { 
+            else
+            {
                 _isPlaying = false; // Reset playback state after finishing
 
                 HideGlow(); // Hide the glow overlay after playback
@@ -389,7 +389,7 @@ namespace Ezmacro
             {
                 // 2. Define our master folder path: Documents\MyMacros
                 string documentsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-                string dedicatedFolderPath = Path.Combine(documentsPath,"Ezmacro", "MyMacros");
+                string dedicatedFolderPath = Path.Combine(documentsPath, "Ezmacro", "MyMacros");
 
                 // 3. Make sure the folder physically exists before opening the window
                 if (!Directory.Exists(dedicatedFolderPath))
@@ -427,7 +427,7 @@ namespace Ezmacro
                 MessageBox.Show($"Failed to save macro: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-        
+
 
         private void BtnLoad_Click(object sender, RoutedEventArgs e)
         {
@@ -475,6 +475,140 @@ namespace Ezmacro
             settingsWindow.ShowDialog();
         }
 
+        private void MacroDataGrid_Drop(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(typeof(MacroEvent)))
+            {
+                var droppedData = e.Data.GetData(typeof(MacroEvent)) as MacroEvent;
+                var targetRow = FindParent<DataGridRow>((DependencyObject)e.OriginalSource);
+
+                if (droppedData != null && targetRow != null)
+                {
+                    var targetData = targetRow.Item as MacroEvent;
+                    int oldIndex = MacroActions.IndexOf(droppedData);
+                    int newIndex = MacroActions.IndexOf(targetData);
+
+                    if (oldIndex != -1 && newIndex != -1 && oldIndex != newIndex)
+                    {
+                        MacroActions.Move(oldIndex, newIndex);
+                        MacroDataGrid.SelectedItem = droppedData;
+                    }
+                }
+            }
+        }
+        private static T FindParent<T>(DependencyObject child) where T : DependencyObject
+        {
+            DependencyObject parentObject = VisualTreeHelper.GetParent(child);
+
+            if (parentObject == null) return null;
+
+            if (parentObject is T parent)
+                return parent;
+
+            return FindParent<T>(parentObject);
+        }
+        private DataGridRow _currentDropTargetRow;
+
+        private void DataGridRow_DragOver(object sender, DragEventArgs e)
+        {
+            e.Effects = DragDropEffects.Move;
+
+            var targetRow = FindParent<DataGridRow>((DependencyObject)e.OriginalSource);
+
+            if (_currentDropTargetRow != null && _currentDropTargetRow != targetRow)
+            {
+                // Clear previous highlight
+                _currentDropTargetRow.BorderThickness = new Thickness(0);
+            }
+
+            if (targetRow != null)
+            {
+                _currentDropTargetRow = targetRow;
+                Point pos = e.GetPosition(targetRow);
+
+                // Highlight top or bottom border depending on insertion point
+                if (pos.Y < targetRow.ActualHeight / 2)
+                {
+                    targetRow.BorderThickness = new Thickness(0, 2, 0, 0); // Line above
+                    targetRow.BorderBrush = System.Windows.Media.Brushes.DodgerBlue;
+                }
+                else
+                {
+                    targetRow.BorderThickness = new Thickness(0, 0, 0, 2); // Line below
+                    targetRow.BorderBrush = System.Windows.Media.Brushes.DodgerBlue;
+                }
+            }
+        }
+        private void DataGridRow_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (e.LeftButton == MouseButtonState.Pressed && sender is DataGridRow row)
+            {
+
+                Point currentPos = e.GetPosition(null);
+                Vector diff = _dragStartPoint - currentPos;
+
+                // Check if user moved far enough to trigger drag
+                if (Math.Abs(diff.X) > SystemParameters.MinimumHorizontalDragDistance ||
+                    Math.Abs(diff.Y) > SystemParameters.MinimumVerticalDragDistance)
+                {
+
+
+
+                    var draggedItem = row.Item as MacroEvent;
+                    if (draggedItem != null)
+                    {
+                        row.Opacity = 0.5;
+                        DragDrop.DoDragDrop(row, draggedItem, DragDropEffects.Move);
+                        row.Opacity = 1.0;
+                    }
+                }
+                
+            }
+        }
+        private Point _dragStartPoint;
+
+        // Capture mouse position on row click
+        private void DataGridRow_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is DataGridRow row)
+            {
+                _dragStartPoint = e.GetPosition(null);
+            }
+        }
+        private void BtnOpenAddWindow_Click(object sender, RoutedEventArgs e)
+        {
+            var addWindow = new AddActionWindow
+            {
+                Owner = this // Blocks parent window until closed
+            };
+
+            if (addWindow.ShowDialog() == true && addWindow.CreatedAction != null)
+            {
+                var newAction = addWindow.CreatedAction;
+
+                // Insert after currently selected row, or append to end
+                if (MacroDataGrid.SelectedItem is MacroEvent selected)
+                {
+                    int index = MacroActions.IndexOf(selected);
+                    MacroActions.Insert(index + 1, newAction);
+                }
+                else
+                {
+                    MacroActions.Add(newAction);
+                }
+
+                MacroDataGrid.SelectedItem = newAction;
+                MacroDataGrid.ScrollIntoView(newAction);
+            }
+        }
+        private void BtnDeleteRow_Click(object sender, RoutedEventArgs e)
+        {
+            // Retrieve the item bound to the row containing the clicked button
+            if (sender is Button button && button.DataContext is MacroEvent eventToDelete)
+            {
+                MacroActions.Remove(eventToDelete);
+            }
+        }
 
 
         protected override void OnClosed(EventArgs e)
@@ -482,114 +616,12 @@ namespace Ezmacro
             _hook?.Dispose();
             base.OnClosed(e);
         }
+        
+
     }
-    public partial class SettingsWindow : Window
-    {
-        private MacroSettings _settings;
+    
+    
 
-        public SettingsWindow(MacroSettings currentSettings)
-        {
-            InitializeComponent();
-            _settings = currentSettings;
-
-            // Populate the dropdown boxes with all available keyboard keys
-            var allKeys = Enum.GetValues(typeof(KeyCode));
-            ComboRecordKey.ItemsSource = allKeys;
-            ComboPlayKey.ItemsSource = allKeys;
-
-            // Select the keys currently stored in our settings state
-            ComboRecordKey.SelectedItem = _settings.RecordStopKey;
-            ComboPlayKey.SelectedItem = _settings.PlaybackKey;
-            CheckBoxMouseRecording.IsChecked = _settings.MousetrackingEnabled;
-            SliderSampling.Value = _settings.Samplingrate;
-            CheckBoxShowMouse.IsChecked = !_settings.HideMouseMoves;
-            CheckBoxContinuosPlayback.IsChecked = _settings.ContinuosPlayback;
-            CheckBoxMinimize.IsChecked = _settings.AutoMinimize;
-        }
-
-        private void BtnSaveSettings_Click(object sender, RoutedEventArgs e)
-        {
-            // Save choices back to the configuration object
-            _settings.RecordStopKey = (KeyCode)ComboRecordKey.SelectedItem;
-            _settings.PlaybackKey = (KeyCode)ComboPlayKey.SelectedItem;
-            _settings.MousetrackingEnabled = CheckBoxMouseRecording.IsChecked ?? true;
-            _settings.Samplingrate = (long)SliderSampling.Value;
-            _settings.HideMouseMoves = !(CheckBoxShowMouse.IsChecked ?? true);
-            _settings.ContinuosPlayback = CheckBoxContinuosPlayback.IsChecked ?? true;
-            _settings.AutoMinimize = CheckBoxMinimize.IsChecked ?? true;
-
-            _settings.Save(); // Persist the settings to disk
-
-
-
-            this.DialogResult = true; // Closes the window
-            CollectionViewSource.GetDefaultView(((MainWindow)Owner).MacroActions).Refresh(); // Refresh the DataGrid filter in the main window
-        }
-    }
-    public class MacroEvent
-    {
-        public string ActionType { get; set; } // e.g., "KeyPress", "MouseClick"
-        public string Detail { get; set; }     // e.g., "Space", "LeftButton"
-        public int X { get; set; }             // Mouse X coordinate
-        public int Y { get; set; }             // Mouse Y coordinate
-        public long Delay { get; set; }        // Milliseconds since last action
-    }
-
-    public class MacroSettings
-    {
-        private static string SettingsFilePath => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-        "Ezmacro",
-        "settings.json"
-    );
-        public bool AutoMinimize { get; set; } = true;
-        public int PlaybackSpeedMultiplier { get; set; } = 1; // 1x speed by default
-        public KeyCode RecordStopKey { get; set; } = KeyCode.VcF10;
-        public KeyCode PlaybackKey { get; set; } = KeyCode.VcF11;
-        public bool ContinuosPlayback { get; set; } = false;
-        public bool MousetrackingEnabled { get; set; } = true;
-        public bool HideMouseMoves { get; set; } = false;
-        public long Samplingrate { get; set; } = 50; // Default sampling rate for mouse tracking
-        public void Save()
-        {
-            try
-            {
-                string directory = Path.GetDirectoryName(SettingsFilePath);
-                if (!Directory.Exists(directory))
-                {
-                    Directory.CreateDirectory(directory);
-                }
-
-                var options = new JsonSerializerOptions { WriteIndented = true };
-                string json = JsonSerializer.Serialize(this, options);
-                File.WriteAllText(SettingsFilePath, json);
-            }
-            catch (Exception ex)
-            {
-                System.Windows.MessageBox.Show($"Failed to save settings: {ex.Message}");
-            }
-        }
-        public static MacroSettings Load()
-        {
-            try
-            {
-                if (File.Exists(SettingsFilePath))
-                {
-                    string json = File.ReadAllText(SettingsFilePath);
-                    var loadedSettings = JsonSerializer.Deserialize<MacroSettings>(json);
-                    if (loadedSettings != null)
-                    {
-                        return loadedSettings;
-                    }
-                }
-            }
-            catch
-            {
-                // Fall back to default settings if file reading fails
-            }
-
-            return new MacroSettings();
-        }
-    }
+    
 
 }
