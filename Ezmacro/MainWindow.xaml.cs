@@ -575,6 +575,40 @@ namespace Ezmacro
                 _dragStartPoint = e.GetPosition(null);
             }
         }
+        private void BtnOpenAddWindow_Click(object sender, RoutedEventArgs e)
+        {
+            var addWindow = new AddActionWindow
+            {
+                Owner = this // Blocks parent window until closed
+            };
+
+            if (addWindow.ShowDialog() == true && addWindow.CreatedAction != null)
+            {
+                var newAction = addWindow.CreatedAction;
+
+                // Insert after currently selected row, or append to end
+                if (MacroDataGrid.SelectedItem is MacroEvent selected)
+                {
+                    int index = MacroActions.IndexOf(selected);
+                    MacroActions.Insert(index + 1, newAction);
+                }
+                else
+                {
+                    MacroActions.Add(newAction);
+                }
+
+                MacroDataGrid.SelectedItem = newAction;
+                MacroDataGrid.ScrollIntoView(newAction);
+            }
+        }
+        private void BtnDeleteRow_Click(object sender, RoutedEventArgs e)
+        {
+            // Retrieve the item bound to the row containing the clicked button
+            if (sender is Button button && button.DataContext is MacroEvent eventToDelete)
+            {
+                MacroActions.Remove(eventToDelete);
+            }
+        }
 
 
         protected override void OnClosed(EventArgs e)
@@ -582,8 +616,8 @@ namespace Ezmacro
             _hook?.Dispose();
             base.OnClosed(e);
         }
-
         
+
     }
     
     
