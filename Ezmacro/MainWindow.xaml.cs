@@ -491,6 +491,9 @@ namespace Ezmacro
                     {
                         MacroActions.Move(oldIndex, newIndex);
                         MacroDataGrid.SelectedItem = droppedData;
+                        _currentDropTargetRow.ClearValue(Border.BorderThicknessProperty);
+                        _currentDropTargetRow.ClearValue(Border.BorderBrushProperty);
+
                     }
                 }
             }
@@ -517,7 +520,8 @@ namespace Ezmacro
             if (_currentDropTargetRow != null && _currentDropTargetRow != targetRow)
             {
                 // Clear previous highlight
-                _currentDropTargetRow.BorderThickness = new Thickness(0);
+                _currentDropTargetRow.ClearValue(Border.BorderThicknessProperty);
+                _currentDropTargetRow.ClearValue(Border.BorderBrushProperty);
             }
 
             if (targetRow != null)
