@@ -38,6 +38,7 @@ namespace Ezmacro
             CheckBoxShowMouse.IsChecked = !_settings.HideMouseMoves;
             CheckBoxContinuosPlayback.IsChecked = _settings.ContinuosPlayback;
             CheckBoxMinimize.IsChecked = _settings.AutoMinimize;
+            CheckBoxHideGlow.IsChecked = _settings.HideGlow;
         }
 
         private void BtnSaveSettings_Click(object sender, RoutedEventArgs e)
@@ -50,6 +51,7 @@ namespace Ezmacro
             _settings.HideMouseMoves = !(CheckBoxShowMouse.IsChecked ?? true);
             _settings.ContinuosPlayback = CheckBoxContinuosPlayback.IsChecked ?? true;
             _settings.AutoMinimize = CheckBoxMinimize.IsChecked ?? true;
+            _settings.HideGlow = CheckBoxHideGlow.IsChecked ?? true;
 
             _settings.Save(); // Persist the settings to disk
 

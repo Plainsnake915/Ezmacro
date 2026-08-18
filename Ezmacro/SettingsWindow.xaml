@@ -6,8 +6,11 @@
         xmlns:local="clr-namespace:Ezmacro"
         mc:Ignorable="d"
         Title="SettingsWindow" Height="450" Width="800">
-    <Grid>
+    <ScrollViewer VerticalScrollBarVisibility="Auto" 
+                  HorizontalScrollBarVisibility="Disabled">
+        <Grid>
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -16,6 +19,7 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
+        
 
         <StackPanel Grid.Row="0" Margin="0,0,0,10">
             <TextBlock Text="Record / Stop Hotkey:" FontWeight="Bold" Margin="0,0,0,5"/>
@@ -55,8 +59,14 @@
             <TextBlock Text="Show Mouse Movements" FontWeight="Bold" Margin="0,0,0,5"/>
             <CheckBox x:Name="CheckBoxShowMouse" Content="Show Mouse Movements" Margin="0,0,0,5"/>
         </StackPanel>
+        <StackPanel Grid.Row="6" Margin="0,0,0,10">
+            <TextBlock Text="Hide Glow during record/playback" FontWeight="Bold" Margin="0,0,0,5"/>
+            <CheckBox x:Name="CheckBoxHideGlow" Content="Hide Glow" Margin="0,0,0,5"/>
+        </StackPanel>
 
 
-        <Button Grid.Row="6" Content="Save Hotkeys" Click="BtnSaveSettings_Click" Padding="10,5"/>
+
+        <Button Grid.Row="7" Content="Save Settings" Click="BtnSaveSettings_Click" Padding="10,5"/>
     </Grid>
+    </ScrollViewer>
 </Window>

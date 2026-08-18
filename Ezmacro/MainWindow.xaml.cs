@@ -27,6 +27,7 @@ namespace Ezmacro
         public MacroSettings Settings { get; set; } = new MacroSettings();
         private void ShowGlow(Color color)
         {
+            if(Settings.HideGlow) { return; }
             if (_overlay == null)
             {
                 _overlay = new GlowOverlayWindow();

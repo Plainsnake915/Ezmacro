@@ -24,6 +24,8 @@ namespace Ezmacro
         public bool MousetrackingEnabled { get; set; } = true;
         public bool HideMouseMoves { get; set; } = false;
         public long Samplingrate { get; set; } = 50; // Default sampling rate for mouse tracking
+        public bool HideGlow {  get; set; } = false;
+
         public void Save()
         {
             try
