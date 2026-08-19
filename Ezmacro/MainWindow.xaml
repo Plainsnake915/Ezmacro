@@ -3,114 +3,176 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:sys="clr-namespace:System;assembly=mscorlib"
         xmlns:local="clr-namespace:Ezmacro"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="EzMacro" Height="500" Width="900"
+        FontFamily="Segoe UI"
+        Background="#121319">
+
+   
+
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="180"/>
+            <ColumnDefinition Width="200"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <StackPanel Grid.Column="0" Background="#2D2D30" Margin="0">
-            <TextBlock Text="MACRO ENGINE" Foreground="White" FontSize="16" FontWeight="Bold" Margin="0,0,0,20" HorizontalAlignment="Center"/>
+        <!-- ================= SIDEBAR ================= -->
+        <Border Grid.Column="0" Background="{StaticResource SidebarBg}">
+            <DockPanel LastChildFill="False">
 
-            <Button Name="BtnRecord" Content="🔴 Record" Margin="0,5" Padding="8" Background="#FF4444" Foreground="White" FontWeight="Bold" Click="BtnRecord_Click"/>
-            <Button Name="BtnStop" Content="⏹️ Stop" Margin="0,5" Padding="8" Background="#555555" Foreground="White" FontWeight="Bold" PreviewMouseDown="BtnStop_Click" IsEnabled="False"/>
-            <Button Name="BtnPlay" Content="▶️ Playback" Margin="0,5,0,25" Padding="8" Background="#4CAF50" Foreground="White" FontWeight="Bold" Click="BtnPlay_Click"/>
+                <StackPanel DockPanel.Dock="Top" Margin="0,24,0,28">
+                    <TextBlock Text="EZMACRO" Foreground="White" FontSize="16" FontWeight="Bold"
+                               HorizontalAlignment="Center" Margin="0,0,0,2"/>
+                    <TextBlock Text="MACRO ENGINE" Foreground="{StaticResource TextFaint}" FontSize="10" FontWeight="SemiBold"
+                               HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                </StackPanel>
 
-            <Button Name="BtnSave" Content="💾 Save Macro" Margin="0,5" Padding="5" Click="BtnSave_Click"/>
-            <Button Name="BtnLoad" Content="📂 Load Macro" Margin="0,5" Padding="5" Click="BtnLoad_Click"/>
-            <Button Name="BtnSettings" Content="Settings" Margin="0,5" Padding="5" Click="BtnSettings_Click"/>
-        </StackPanel>
+                <StackPanel DockPanel.Dock="Top">
+                    <Button Name="BtnRecord" Style="{StaticResource SidebarButton}" Background="{StaticResource Danger}" Click="BtnRecord_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xEA0C;" Style="{StaticResource Icon}" Margin="0,0,10,0"/>
+                            <TextBlock Text="Record" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Name="BtnStop" Style="{StaticResource SidebarButton}" PreviewMouseDown="BtnStop_Click" IsEnabled="False">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE71A;" Style="{StaticResource Icon}" Margin="0,0,10,0"/>
+                            <TextBlock Text="Stop" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Name="BtnPlay" Style="{StaticResource SidebarButton}" Background="{StaticResource Success}" Click="BtnPlay_Click" Margin="16,4,16,24">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE768;" Style="{StaticResource Icon}" Margin="0,0,10,0"/>
+                            <TextBlock Text="Playback" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
 
-        <Grid Grid.Column="1" Margin="5">
+                    <Border Height="1" Background="{StaticResource BorderSubtle}" Margin="16,0,16,16"/>
+
+                    <Button Name="BtnSave" Style="{StaticResource SidebarButtonGhost}" Click="BtnSave_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE74E;" Style="{StaticResource Icon}" Margin="0,0,10,0"/>
+                            <TextBlock Text="Save Macro" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Name="BtnLoad" Style="{StaticResource SidebarButtonGhost}" Click="BtnLoad_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE8B7;" Style="{StaticResource Icon}" Margin="0,0,10,0"/>
+                            <TextBlock Text="Load Macro" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Name="BtnSettings" Style="{StaticResource SidebarButtonGhost}" Click="BtnSettings_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE713;" Style="{StaticResource Icon}" Margin="0,0,10,0"/>
+                            <TextBlock Text="Settings" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+
+            </DockPanel>
+        </Border>
+
+        <!-- ================= CONTENT ================= -->
+        <Grid Grid.Column="1" Margin="24,20,24,20">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <TextBlock Text="Recorded Actions List" FontSize="14" FontWeight="Bold" Margin="0,0,0,10"/>
-            
+            <StackPanel Grid.Row="0" Margin="0,0,0,14">
+                <TextBlock Text="Recorded Actions" FontSize="18" FontWeight="Bold" Foreground="{StaticResource TextPrimary}"/>
+                <TextBlock Text="Drag rows to reorder — click a row to select it" FontSize="12" Foreground="{StaticResource TextMuted}" Margin="0,2,0,0"/>
+            </StackPanel>
 
-            <DataGrid 
-                Name="MacroDataGrid" 
-                Grid.Row="1" 
-                AutoGenerateColumns="False" 
-                CanUserAddRows="False" 
-                CanUserDeleteRows="True" 
-                SelectionMode="Single"
-                GridLinesVisibility="Horizontal"
-                HeadersVisibility="Column"
-                AllowDrop="True"
-                CanUserSortColumns="False"
-                Drop="MacroDataGrid_Drop"
-                Background="White" 
-                RowHeaderWidth="0">
-                <DataGrid.RowStyle>
-                    <Style TargetType="DataGridRow">
-                        <EventSetter Event="DragOver" Handler="DataGridRow_DragOver"/>
-                        <EventSetter Event="PreviewMouseLeftButtonDown" Handler="DataGridRow_PreviewMouseLeftButtonDown"/>
-                        <EventSetter Event="MouseMove" Handler="DataGridRow_MouseMove"/>
-                        <Setter Property="Background" Value="Transparent" />
-                        <Setter Property="Margin" Value="0,1,0,1" />
-
-                        <Style.Triggers>
-                           <!-- Mouse Hover Highlight -->
-                           <Trigger Property="IsMouseOver" Value="True">
-                           <Setter Property="Background" Value="#E5F3FF" />
-                        </Trigger>
-
-                        <!-- Selected Row Highlight -->
-                        <Trigger Property="IsSelected" Value="True">
-                            <Setter Property="Background" Value="#007ACC" />
-                            <Setter Property="Foreground" Value="White" />
-                           <Setter Property="FontWeight" Value="SemiBold" />
-                        </Trigger>
-                        </Style.Triggers>
-                    </Style>
-                </DataGrid.RowStyle>
-
-                <DataGrid.Columns>
-                    <DataGridComboBoxColumn Header="Action Type" 
-                                SelectedItemBinding="{Binding ActionType, UpdateSourceTrigger=PropertyChanged}" 
-                                Width="120">
-                        <DataGridComboBoxColumn.ItemsSource>
-                            <x:Array Type="{x:Type sys:String}" xmlns:sys="clr-namespace:System;assembly=mscorlib">
-                                <sys:String>KeyPress</sys:String>
-                                <sys:String>KeyRelease</sys:String>
-                                <sys:String>MousePress</sys:String>
-                                <sys:String>MouseRelease</sys:String>
-                                <sys:String>MouseMove</sys:String>
-                            </x:Array>
-                        </DataGridComboBoxColumn.ItemsSource>
-                    </DataGridComboBoxColumn>
+            <Border Grid.Row="1" Background="{StaticResource CardBg}" CornerRadius="10" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1">
+                <DataGrid
+                    Name="MacroDataGrid"
+                    AutoGenerateColumns="False"
+                    CanUserAddRows="False"
+                    CanUserDeleteRows="True"
+                    SelectionMode="Single"
+                    GridLinesVisibility="None"
+                    HeadersVisibility="Column"
+                    AllowDrop="True"
+                    CanUserSortColumns="False"
+                    Drop="MacroDataGrid_Drop"
+                    Background="Transparent"
                     
-                    <DataGridTextColumn Header="Key / Detail" Binding="{Binding Detail, UpdateSourceTrigger=PropertyChanged}" Width="100"/>
-                    <DataGridTextColumn Header="X Pos" Binding="{Binding X, UpdateSourceTrigger=PropertyChanged}" Width="60"/>
-                    <DataGridTextColumn Header="Y Pos" Binding="{Binding Y,UpdateSourceTrigger=PropertyChanged}" Width="60"/>
-                    <DataGridTextColumn Header="Delay (ms)" Binding="{Binding Delay, UpdateSourceTrigger=PropertyChanged}" Width="100"/>
-                    <DataGridTemplateColumn Width="*"/>
-                    <DataGridTemplateColumn Header="Actions" Width="70">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <Button Content="✕" 
-                            Width="30" 
-                            Height="22" 
-                            Background="#FFECEC" 
-                            Foreground="Red" 
-                            BorderBrush="Transparent"
-                            FontWeight="Bold"
-                            ToolTip="Remove this action"
-                            Click="BtnDeleteRow_Click"/>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                </DataGrid.Columns>
-            </DataGrid>
-            <Button Content="Add Action..." Click="BtnOpenAddWindow_Click" Width="100"/>
-            
+                    CellStyle="{StaticResource DataGridCellStyleModern}"
+                    RowHeaderStyle="{StaticResource RowIndicatorHeaderStyle}"
+                    BorderThickness="0"
+                    RowHeaderWidth="4"
+                    RowHeight="38"
+                    Margin="4">
+                    <DataGrid.RowStyle>
+                        <Style TargetType="DataGridRow">
+                            <EventSetter Event="DragOver" Handler="DataGridRow_DragOver"/>
+                            <EventSetter Event="PreviewMouseLeftButtonDown" Handler="DataGridRow_PreviewMouseLeftButtonDown"/>
+                            <EventSetter Event="MouseMove" Handler="DataGridRow_MouseMove"/>
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                            <Setter Property="BorderBrush" Value="{StaticResource BorderSubtle}"/>
+
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource RowHover}"/>
+                                </Trigger>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource AccentSoft}"/>
+                                    <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGrid.RowStyle>
+
+                    <DataGrid.Columns>
+                        <DataGridComboBoxColumn Header="ACTION TYPE"
+                                    SelectedItemBinding="{Binding ActionType, UpdateSourceTrigger=PropertyChanged}"
+                                    Width="130">
+                            <DataGridComboBoxColumn.ItemsSource>
+                                <x:Array Type="{x:Type sys:String}">
+                                    <sys:String>KeyPress</sys:String>
+                                    <sys:String>KeyRelease</sys:String>
+                                    <sys:String>MousePress</sys:String>
+                                    <sys:String>MouseRelease</sys:String>
+                                    <sys:String>MouseMove</sys:String>
+                                </x:Array>
+                            </DataGridComboBoxColumn.ItemsSource>
+                        </DataGridComboBoxColumn>
+
+                        <DataGridTextColumn Header="KEY / DETAIL" Binding="{Binding Detail, UpdateSourceTrigger=PropertyChanged}" Width="110"/>
+                        <DataGridTextColumn Header="X POS" Binding="{Binding X, UpdateSourceTrigger=PropertyChanged}" Width="65"/>
+                        <DataGridTextColumn Header="Y POS" Binding="{Binding Y, UpdateSourceTrigger=PropertyChanged}" Width="65"/>
+                        <DataGridTextColumn Header="DELAY (MS)" Binding="{Binding Delay, UpdateSourceTrigger=PropertyChanged}" Width="100"/>
+                        <DataGridTemplateColumn Width="*"/>
+                        <DataGridTemplateColumn Header="" Width="50">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Button Content="&#xE711;"
+                                            FontFamily="Segoe MDL2 Assets"
+                                            FontSize="12"
+                                            Style="{StaticResource RowDeleteButton}"
+                                            ToolTip="Remove this action"
+                                            Click="BtnDeleteRow_Click"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Border>
+
+            <!-- Floating "+" add button, bottom-right of content area -->
+            <Button Grid.Row="2" Name="BtnOpenAddWindow" Style="{StaticResource FabButton}"
+                    HorizontalAlignment="Right" Margin="0,16,4,0"
+                    ToolTip="Add Action"
+                    Click="BtnOpenAddWindow_Click">
+                <TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="White"/>
+            </Button>
+
         </Grid>
-        
     </Grid>
 </Window>

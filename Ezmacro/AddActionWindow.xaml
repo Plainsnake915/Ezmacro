@@ -4,57 +4,115 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Ezmacro"
-        mc:Ignorable="d"
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
-        Title="Add New Action" Height="280" Width="350"
-        WindowStartupLocation="CenterOwner" ResizeMode="NoResize">
-    <Grid Margin="15">
+        mc:Ignorable="d"
+        Title="Add New Action" Height="420" Width="400"
+        MinHeight="300"
+        WindowStartupLocation="CenterOwner" ResizeMode="CanResizeWithGrip"
+        FontFamily="Segoe UI"
+        Background="{StaticResource AppBg}">
+
+    <!-- Window-specific interaction rules, kept local (not in Styles.xaml) since they
+         bind to CmbActionType by name and only make sense in this window's tree. -->
+    <Window.Resources>
+        <ResourceDictionary>
+
+            <!-- Key/Button: enabled for everything except MouseMove (which has no key/button) -->
+            <Style x:Key="KeyDetailSection" TargetType="Grid" BasedOn="{StaticResource DimmableSection}">
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding ElementName=CmbActionType, Path=SelectedItem}" Value="MouseMove">
+                        <Setter Property="IsEnabled" Value="False"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <!-- X/Y Position: disabled by default, only enabled for MousePress or MouseMove -->
+            <Style x:Key="PositionSection" TargetType="Grid" BasedOn="{StaticResource DimmableSection}">
+                <Setter Property="IsEnabled" Value="False"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding ElementName=CmbActionType, Path=SelectedItem}" Value="MousePress">
+                        <Setter Property="IsEnabled" Value="True"/>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding ElementName=CmbActionType, Path=SelectedItem}" Value="MouseRelease">
+                        <Setter Property="IsEnabled" Value="True"/>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding ElementName=CmbActionType, Path=SelectedItem}" Value="MouseMove">
+                        <Setter Property="IsEnabled" Value="True"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Grid Margin="24,22,24,20">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="100"/>
-            <ColumnDefinition Width="*"/>
-        </Grid.ColumnDefinitions>
 
-        <!-- Action Type -->
-        <TextBlock Grid.Row="0" Grid.Column="0" Text="Action Type:" VerticalAlignment="Center" Margin="0,0,0,10"/>
-        <ComboBox x:Name="CmbActionType" Grid.Row="0" Grid.Column="1" Margin="0,0,0,10"
-                  SelectionChanged="CmbActionType_SelectionChanged">
-            <sys:String>KeyPress</sys:String>
-            <sys:String>KeyRelease</sys:String>
-            <sys:String>MousePress</sys:String>
-            <sys:String>MouseRelease</sys:String>
-            <sys:String>MouseMove</sys:String>
-        </ComboBox>
+        <StackPanel Grid.Row="0" Margin="0,0,0,18">
+            <TextBlock Text="Add New Action" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextPrimary}"/>
+            <TextBlock Text="Define a single macro step" FontSize="12" Foreground="{StaticResource TextMuted}" Margin="0,2,0,0"/>
+        </StackPanel>
 
-        <!-- Detail / Key -->
-        <TextBlock x:Name="LblDetail" Grid.Row="1" Grid.Column="0" Text="Key / Button:" VerticalAlignment="Center" Margin="0,0,0,10"/>
-        <ComboBox x:Name="CmbDetail" Grid.Row="1" Grid.Column="1" Margin="0,0,0,10" IsEditable="True"/>
+        <!-- Scrollable body -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Margin="0,0,4,0">
 
-        <!-- X Position -->
-        <TextBlock Grid.Row="2" Grid.Column="0" Text="X Position:" VerticalAlignment="Center" Margin="0,0,0,10"/>
-        <TextBox x:Name="TxtX" Grid.Row="2" Grid.Column="1" Text="0" Margin="0,0,0,10"/>
+                <!-- Action Type -->
+                <StackPanel Margin="0,0,0,14">
+                    <TextBlock Text="Action Type" Style="{StaticResource FieldLabel}"/>
+                    <ComboBox x:Name="CmbActionType" Style="{StaticResource DarkComboBox}"
+                              SelectionChanged="CmbActionType_SelectionChanged">
+                        <sys:String>KeyPress</sys:String>
+                        <sys:String>KeyRelease</sys:String>
+                        <sys:String>MousePress</sys:String>
+                        <sys:String>MouseRelease</sys:String>
+                        <sys:String>MouseMove</sys:String>
+                    </ComboBox>
+                </StackPanel>
 
-        <!-- Y Position -->
-        <TextBlock Grid.Row="3" Grid.Column="0" Text="Y Position:" VerticalAlignment="Center" Margin="0,0,0,10"/>
-        <TextBox x:Name="TxtY" Grid.Row="3" Grid.Column="1" Text="0" Margin="0,0,0,10"/>
+                <!-- Detail / Key — unavailable for MouseMove -->
+                <Grid Style="{StaticResource KeyDetailSection}" Margin="0,0,0,14">
+                    <StackPanel>
+                        <TextBlock x:Name="LblDetail" Text="Key / Button" Style="{StaticResource FieldLabel}"/>
+                        <ComboBox x:Name="CmbDetail" Style="{StaticResource DarkComboBox}" IsEditable="True"/>
+                    </StackPanel>
+                </Grid>
 
-        <!-- Delay -->
-        <TextBlock Grid.Row="4" Grid.Column="0" Text="Delay (ms):" VerticalAlignment="Center" Margin="0,0,0,10"/>
-        <TextBox x:Name="TxtDelay" Grid.Row="4" Grid.Column="1" Text="100" Margin="0,0,0,10"/>
+                <!-- X / Y Position — only available for MousePress or MouseMove -->
+                <Grid Style="{StaticResource PositionSection}" Margin="0,0,0,14">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="12"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="X Position" Style="{StaticResource FieldLabel}"/>
+                        <TextBox x:Name="TxtX" Text="0" Style="{StaticResource DarkTextBox}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="Y Position" Style="{StaticResource FieldLabel}"/>
+                        <TextBox x:Name="TxtY" Text="0" Style="{StaticResource DarkTextBox}"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Delay -->
+                <StackPanel Margin="0,0,0,4">
+                    <TextBlock Text="Delay (ms)" Style="{StaticResource FieldLabel}"/>
+                    <TextBox x:Name="TxtDelay" Text="100" Style="{StaticResource DarkTextBox}"/>
+                </StackPanel>
+
+            </StackPanel>
+        </ScrollViewer>
 
         <!-- Buttons -->
-        <StackPanel Grid.Row="6" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button Content="Add" Width="80" Height="26" Margin="0,0,10,0" IsDefault="True" Click="BtnAdd_Click"/>
-            <Button Content="Cancel" Width="80" Height="26" IsCancel="True" Click="BtnCancel_Click"/>
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+            <Button Content="Cancel" Style="{StaticResource GhostButton}" Margin="0,0,10,0" IsCancel="True" Click="BtnCancel_Click"/>
+            <Button Content="Add Action" Style="{StaticResource PrimaryButton}" Width="110" IsDefault="True" Click="BtnAdd_Click"/>
         </StackPanel>
-        
+
     </Grid>
 </Window>

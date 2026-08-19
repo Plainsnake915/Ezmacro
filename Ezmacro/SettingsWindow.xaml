@@ -5,58 +5,389 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Ezmacro"
         mc:Ignorable="d"
-        Title="SettingsWindow" Height="450" Width="800">
+        Title="Settings" Height="560" Width="480"
+        FontFamily="Segoe UI"
+        Background="{DynamicResource AppBg}">
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- Adjust this path to wherever the shared resource file actually lives -->
+                <ResourceDictionary Source="Styles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- ================= SECTION CARD ================= -->
+            <Style x:Key="SectionCard" TargetType="Border">
+                <Setter Property="Background" Value="{DynamicResource CardBg}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource BorderSubtle}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="CornerRadius" Value="10"/>
+                <Setter Property="Padding" Value="18,16"/>
+                <Setter Property="Margin" Value="0,0,0,14"/>
+            </Style>
+
+            <Style x:Key="SectionHeader" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="FontSize" Value="13"/>
+                <Setter Property="Margin" Value="0,0,0,12"/>
+            </Style>
+
+            <Style x:Key="FieldLabel" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+                <Setter Property="FontSize" Value="13"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+            </Style>
+
+            <Style x:Key="FieldSubLabel" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{DynamicResource TextMuted}"/>
+                <Setter Property="FontSize" Value="11"/>
+                <Setter Property="Margin" Value="0,2,0,0"/>
+            </Style>
+
+            <!-- ================= TOGGLE SWITCH (CheckBox) ================= -->
+            <Style x:Key="ToggleSwitch" TargetType="CheckBox">
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="CheckBox">
+                            <Border x:Name="Track" Width="40" Height="22" CornerRadius="11"
+                                    Background="{DynamicResource Disabled}" BorderThickness="0"
+                                    HorizontalAlignment="Left">
+                                <Border x:Name="Thumb" Width="16" Height="16" CornerRadius="8"
+                                        Background="#C7C9D9" HorizontalAlignment="Left" Margin="3,0,0,0">
+                                    <Border.Effect>
+                                        <DropShadowEffect Opacity="0.3" BlurRadius="4" ShadowDepth="1"/>
+                                    </Border.Effect>
+                                </Border>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter TargetName="Track" Property="Background" Value="{DynamicResource Accent}"/>
+                                    <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right"/>
+                                    <Setter TargetName="Thumb" Property="Margin" Value="0,0,3,0"/>
+                                    <Setter TargetName="Thumb" Property="Background" Value="White"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Track" Property="Opacity" Value="0.85"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- Row: label (+ optional sublabel) on the left, toggle on the right -->
+            <Style x:Key="ToggleRow" TargetType="Grid">
+                <Setter Property="Margin" Value="0,0,0,4"/>
+            </Style>
+
+            <!-- ================= COMBOBOX ================= -->
+            <Style x:Key="DarkComboBoxItem" TargetType="ComboBoxItem">
+                <Setter Property="Padding" Value="10,7"/>
+                <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ComboBoxItem">
+                            <Border x:Name="Bd" Background="Transparent" Padding="{TemplateBinding Padding}">
+                                <ContentPresenter/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsHighlighted" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="{DynamicResource RowHover}"/>
+                                </Trigger>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="{DynamicResource AccentSoft}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="DarkComboBox" TargetType="ComboBox">
+                <Setter Property="Height" Value="36"/>
+                <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+                <Setter Property="Background" Value="{DynamicResource HeaderBg}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource BorderSubtle}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="Padding" Value="10,0"/>
+                <Setter Property="FontSize" Value="13"/>
+                <Setter Property="ItemContainerStyle" Value="{StaticResource DarkComboBoxItem}"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ComboBox">
+                            <Grid>
+                                <ToggleButton x:Name="ToggleBtn"
+                                              Background="{Binding Background, RelativeSource={RelativeSource TemplatedParent}}"
+                                              BorderBrush="{Binding BorderBrush, RelativeSource={RelativeSource TemplatedParent}}"
+                                              BorderThickness="{Binding BorderThickness, RelativeSource={RelativeSource TemplatedParent}}"
+                                              IsChecked="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
+                                              Focusable="False" ClickMode="Press">
+                                    <ToggleButton.Template>
+                                        <ControlTemplate TargetType="ToggleButton">
+                                            <Border x:Name="Bd" Background="{TemplateBinding Background}"
+                                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                                    CornerRadius="6">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="28"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Text="&#xE70D;" Grid.Column="1" FontFamily="Segoe MDL2 Assets"
+                                                               FontSize="9" Foreground="{DynamicResource TextMuted}"
+                                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Grid>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource Accent}"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </ToggleButton.Template>
+                                </ToggleButton>
+                                <ContentPresenter IsHitTestVisible="False" Margin="{TemplateBinding Padding}"
+                                                   VerticalAlignment="Center" HorizontalAlignment="Left"
+                                                   TextElement.Foreground="{TemplateBinding Foreground}"
+                                                   Content="{TemplateBinding SelectionBoxItem}"/>
+                                <Popup x:Name="Popup" IsOpen="{TemplateBinding IsDropDownOpen}"
+                                       Placement="Bottom" AllowsTransparency="True" Focusable="False" PopupAnimation="Slide">
+                                    <Border Background="{DynamicResource HeaderBg}" BorderBrush="{DynamicResource BorderSubtle}"
+                                            BorderThickness="1" CornerRadius="6" Margin="0,4,0,0"
+                                            MinWidth="{TemplateBinding ActualWidth}">
+                                        <Border.Effect>
+                                            <DropShadowEffect Opacity="0.35" BlurRadius="16" ShadowDepth="4" Direction="270"/>
+                                        </Border.Effect>
+                                        <ScrollViewer MaxHeight="200" Margin="4">
+                                            <StackPanel IsItemsHost="True"/>
+                                        </ScrollViewer>
+                                    </Border>
+                                </Popup>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- ================= SLIDER ================= -->
+            <Style x:Key="DarkSlider" TargetType="Slider">
+                <Setter Property="Height" Value="24"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Slider">
+                            <Grid VerticalAlignment="Center">
+                                <Border Height="4" Background="{DynamicResource Disabled}" CornerRadius="2"/>
+                                <Track x:Name="PART_Track">
+                                    <Track.DecreaseRepeatButton>
+                                        <RepeatButton Command="Slider.DecreaseLarge">
+                                            <RepeatButton.Template>
+                                                <ControlTemplate TargetType="RepeatButton">
+                                                    <Border Height="4" Background="{DynamicResource Accent}" CornerRadius="2"/>
+                                                </ControlTemplate>
+                                            </RepeatButton.Template>
+                                        </RepeatButton>
+                                    </Track.DecreaseRepeatButton>
+                                    <Track.IncreaseRepeatButton>
+                                        <RepeatButton Command="Slider.IncreaseLarge" Opacity="0">
+                                            <RepeatButton.Template>
+                                                <ControlTemplate TargetType="RepeatButton">
+                                                    <Border Background="Transparent"/>
+                                                </ControlTemplate>
+                                            </RepeatButton.Template>
+                                        </RepeatButton>
+                                    </Track.IncreaseRepeatButton>
+                                    <Track.Thumb>
+                                        <Thumb>
+                                            <Thumb.Template>
+                                                <ControlTemplate TargetType="Thumb">
+                                                    <Ellipse Width="16" Height="16" Fill="White" Stroke="{DynamicResource Accent}" StrokeThickness="2"/>
+                                                </ControlTemplate>
+                                            </Thumb.Template>
+                                        </Thumb>
+                                    </Track.Thumb>
+                                </Track>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- ================= PRIMARY BUTTON ================= -->
+            <Style x:Key="PrimaryButton" TargetType="Button">
+                <Setter Property="Foreground" Value="White"/>
+                <Setter Property="Background" Value="{DynamicResource Accent}"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="FontSize" Value="13"/>
+                <Setter Property="Height" Value="38"/>
+                <Setter Property="Padding" Value="22,0"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="6">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bd" Property="Opacity" Value="0.88"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="Bd" Property="Opacity" Value="0.72"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- ================= DIMMABLE SECTION ================= -->
+            <!-- Wrap any block in this and bind IsEnabled to a toggle; it visibly grays out
+                 instead of just becoming unresponsive (WPF's default disabled look is too subtle
+                 on custom-templated controls like our Slider). -->
+            <Style x:Key="DimmableSection" TargetType="Grid">
+                <Setter Property="Opacity" Value="1"/>
+                <Style.Triggers>
+                    <Trigger Property="IsEnabled" Value="False">
+                        <Setter Property="Opacity" Value="0.4"/>
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+
+        </ResourceDictionary>
+    </Window.Resources>
+
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <StackPanel Grid.Row="0" Margin="0,0,0,10">
-            <TextBlock Text="Record / Stop Hotkey:" FontWeight="Bold" Margin="0,0,0,5"/>
-            <ComboBox x:Name="ComboRecordKey"/>
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Margin="24,20,24,8">
+            <TextBlock Text="Settings" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}"/>
+            <TextBlock Text="Configure hotkeys, recording, and playback behavior" FontSize="12"
+                       Foreground="{DynamicResource TextMuted}" Margin="0,2,0,0"/>
         </StackPanel>
 
-        <StackPanel Grid.Row="1" Margin="0,0,0,10">
-            <TextBlock Text="Playback Hotkey:" FontWeight="Bold" Margin="0,0,0,5"/>
-            <ComboBox x:Name="ComboPlayKey"/>
-        </StackPanel>
-        
-        <StackPanel Grid.Row="2" Margin="0,0,0,10">
-            <TextBlock Text="Mouse recording" FontWeight="Bold" Margin="0,0,0,5"/>
-            <CheckBox x:Name="CheckBoxMouseRecording" Content="Enable Mouse Recording" Margin="0,0,0,5"/>
-            <TextBlock Text="Sampling Interval:" VerticalAlignment="Center" Margin="0,0,5,0"/>
-            <Slider x:Name="SliderSampling" Minimum="10" Maximum="200" Value="50" TickFrequency="10" IsSnapToTickEnabled="True" Width="100" VerticalAlignment="Bottom" RenderTransformOrigin="0.5,0.5">
-                <Slider.RenderTransform>
-                    <TransformGroup>
-                        <ScaleTransform ScaleX="1"/>
-                        <SkewTransform/>
-                        <RotateTransform Angle="0"/>
-                        <TranslateTransform X="-350"/>
-                    </TransformGroup>
-                </Slider.RenderTransform>
-            </Slider>
-            <TextBlock Text="{Binding ElementName=SliderSampling, Path=Value, StringFormat={}{0}ms}" VerticalAlignment="Center" Margin="5,0,0,0"/>
-        </StackPanel>
-        <StackPanel Grid.Row="3" Margin="0,0,0,10">
-            <TextBlock Text="Continuos Playback" FontWeight="Bold" Margin="0,0,0,5"/>
-            <CheckBox x:Name="CheckBoxContinuosPlayback" Content="Continuos Playback" Margin="0,0,0,5"/>
-        </StackPanel>
-        <StackPanel Grid.Row="4" Margin="0,0,0,10">
-            <TextBlock Text="Auto Minimize" FontWeight="Bold" Margin="0,0,0,5"/>
-            <CheckBox x:Name="CheckBoxMinimize" Content="Auto Minimize" Margin="0,0,0,5"/>
-        </StackPanel>
-        <StackPanel Grid.Row="5" Margin="0,0,0,10">
-            <TextBlock Text="Show Mouse Movements" FontWeight="Bold" Margin="0,0,0,5"/>
-            <CheckBox x:Name="CheckBoxShowMouse" Content="Show Mouse Movements" Margin="0,0,0,5"/>
-        </StackPanel>
+        <!-- Scrollable body -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                      Padding="24,4,24,4" Margin="0,0,0,0">
+            <StackPanel>
 
+                <!-- Hotkeys -->
+                <Border Style="{StaticResource SectionCard}">
+                    <StackPanel>
+                        <TextBlock Text="HOTKEYS" Style="{StaticResource SectionHeader}"/>
 
-        <Button Grid.Row="6" Content="Save Hotkeys" Click="BtnSaveSettings_Click" Padding="10,5"/>
+                        <TextBlock Text="Record / Stop Hotkey" Style="{StaticResource FieldLabel}" Margin="0,0,0,6"/>
+                        <ComboBox x:Name="ComboRecordKey" Style="{StaticResource DarkComboBox}" Margin="0,0,0,14"/>
+
+                        <TextBlock Text="Playback Hotkey" Style="{StaticResource FieldLabel}" Margin="0,0,0,6"/>
+                        <ComboBox x:Name="ComboPlayKey" Style="{StaticResource DarkComboBox}"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Mouse Recording -->
+                <Border Style="{StaticResource SectionCard}">
+                    <StackPanel>
+                        <TextBlock Text="MOUSE RECORDING" Style="{StaticResource SectionHeader}"/>
+
+                        <Grid Style="{StaticResource ToggleRow}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Enable mouse recording" Style="{StaticResource FieldLabel}"/>
+                            <CheckBox x:Name="CheckBoxMouseRecording" Grid.Column="1" Style="{StaticResource ToggleSwitch}"/>
+                        </Grid>
+
+                        <Border Height="1" Background="{DynamicResource BorderSubtle}" Margin="0,14"/>
+
+                        <Grid Style="{StaticResource DimmableSection}"
+                              IsEnabled="{Binding ElementName=CheckBoxMouseRecording, Path=IsChecked}">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <Grid Grid.Row="0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="Sampling interval" Style="{StaticResource FieldLabel}"/>
+                                    <TextBlock Text="How often mouse position is captured while recording"
+                                               Style="{StaticResource FieldSubLabel}"/>
+                                </StackPanel>
+                                <TextBlock Grid.Column="1" VerticalAlignment="Center" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource Accent}"
+                                           Text="{Binding ElementName=SliderSampling, Path=Value, StringFormat={}{0}ms}"/>
+                            </Grid>
+                            <Slider x:Name="SliderSampling" Grid.Row="1" Style="{StaticResource DarkSlider}"
+                                    Minimum="10" Maximum="200" Value="50"
+                                    TickFrequency="10" IsSnapToTickEnabled="True" Margin="0,10,0,0"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- Behavior -->
+                <Border Style="{StaticResource SectionCard}">
+                    <StackPanel>
+                        <TextBlock Text="PLAYBACK &amp; BEHAVIOR" Style="{StaticResource SectionHeader}"/>
+
+                        <Grid Style="{StaticResource ToggleRow}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Continuous playback" Style="{StaticResource FieldLabel}"/>
+                            <CheckBox x:Name="CheckBoxContinuosPlayback" Grid.Column="1" Style="{StaticResource ToggleSwitch}"/>
+                        </Grid>
+
+                        <Grid Style="{StaticResource ToggleRow}" Margin="0,12,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Auto minimize" Style="{StaticResource FieldLabel}"/>
+                            <CheckBox x:Name="CheckBoxMinimize" Grid.Column="1" Style="{StaticResource ToggleSwitch}"/>
+                        </Grid>
+
+                        <Grid Style="{StaticResource ToggleRow}" Margin="0,12,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Show mouse movements" Style="{StaticResource FieldLabel}"/>
+                            <CheckBox x:Name="CheckBoxShowMouse" Grid.Column="1" Style="{StaticResource ToggleSwitch}"/>
+                        </Grid>
+
+                        <Grid Style="{StaticResource ToggleRow}" Margin="0,12,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Hide glow during record/playback" Style="{StaticResource FieldLabel}"/>
+                            </StackPanel>
+                            <CheckBox x:Name="CheckBoxHideGlow" Grid.Column="1" Style="{StaticResource ToggleSwitch}"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Footer -->
+        <Border Grid.Row="2" Background="{DynamicResource CardBg}" BorderBrush="{DynamicResource BorderSubtle}"
+                BorderThickness="0,1,0,0" Padding="24,14">
+            <Button Content="Save Settings" Style="{StaticResource PrimaryButton}"
+                    HorizontalAlignment="Right" Click="BtnSaveSettings_Click"/>
+        </Border>
+
     </Grid>
 </Window>

@@ -27,6 +27,7 @@ namespace Ezmacro
         public MacroSettings Settings { get; set; } = new MacroSettings();
         private void ShowGlow(Color color)
         {
+            if(Settings.HideGlow) { return; }
             if (_overlay == null)
             {
                 _overlay = new GlowOverlayWindow();
@@ -298,81 +299,79 @@ namespace Ezmacro
 
             await Task.Run(async () =>
             {
-                foreach (var action in MacroActions)
+                while (_isPlaying)
                 {
-                    if (!_isPlaying) break; // Stop playback if the user has stopped it
-
-                    if (action.Delay > 0)
+                    foreach (var action in MacroActions)
                     {
-                        await Task.Delay((int)action.Delay);
-                    }
+                        if (!_isPlaying) break; // Stop playback if the user has stopped it
 
-                    try
-                    {
-                        // Execute action based on its type
-                        if (action.ActionType == "wait")
+                        if (action.Delay > 0)
                         {
-                            continue;
-                        }
-                        if (action.ActionType == "KeyPress")
-                        {
-                            if (Enum.TryParse(action.Detail, out KeyCode code))
-                            {
-                                simulator.SimulateKeyPress(code);
-                            }
-                        }
-                        else if (action.ActionType == "KeyRelease")
-                        {
-                            if (Enum.TryParse(action.Detail, out KeyCode code))
-                            {
-                                simulator.SimulateKeyRelease(code);
-                            }
+                            await Task.Delay((int)action.Delay);
                         }
 
-                        else if (action.ActionType == "MousePress")
+                        try
                         {
-                            if (Enum.TryParse(action.Detail, out SharpHook.Data.MouseButton button))
+                            // Execute action based on its type
+                            if (action.ActionType == "wait")
+                            {
+                                continue;
+                            }
+                            if (action.ActionType == "KeyPress")
+                            {
+                                if (Enum.TryParse(action.Detail, out KeyCode code))
+                                {
+                                    simulator.SimulateKeyPress(code);
+                                }
+                            }
+                            else if (action.ActionType == "KeyRelease")
+                            {
+                                if (Enum.TryParse(action.Detail, out KeyCode code))
+                                {
+                                    simulator.SimulateKeyRelease(code);
+                                }
+                            }
+
+                            else if (action.ActionType == "MousePress")
+                            {
+                                if (Enum.TryParse(action.Detail, out SharpHook.Data.MouseButton button))
+                                {
+                                    simulator.SimulateMouseMovement((short)action.X, (short)action.Y);
+                                    simulator.SimulateMousePress(button);
+                                }
+                            }
+                            else if (action.ActionType == "MouseRelease")
+                            {
+                                if (Enum.TryParse(action.Detail, out SharpHook.Data.MouseButton button))
+                                {
+                                    simulator.SimulateMouseMovement((short)action.X, (short)action.Y);
+                                    simulator.SimulateMouseRelease(button);
+                                }
+                            }
+                            else if (action.ActionType == "MouseMove")
                             {
                                 simulator.SimulateMouseMovement((short)action.X, (short)action.Y);
-                                simulator.SimulateMousePress(button);
                             }
                         }
-                        else if (action.ActionType == "MouseRelease")
+                        catch (Exception ex)
                         {
-                            if (Enum.TryParse(action.Detail, out SharpHook.Data.MouseButton button))
-                            {
-                                simulator.SimulateMouseMovement((short)action.X, (short)action.Y);
-                                simulator.SimulateMouseRelease(button);
-                            }
-                        }
-                        else if (action.ActionType == "MouseMove")
-                        {
-                            simulator.SimulateMouseMovement((short)action.X, (short)action.Y);
+                            Debug.WriteLine($"Failed to simulate action: {ex.Message}");
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"Failed to simulate action: {ex.Message}");
-                    }
+                    if (!Settings.ContinuosPlayback) _isPlaying = false;
                 }
-
             });
-            if (Settings.ContinuosPlayback && _isPlaying)
-            {
-                playBack(); // Recursively call playBack for continuous playback
-            }
-            else
-            {
-                _isPlaying = false; // Reset playback state after finishing
+           
 
-                HideGlow(); // Hide the glow overlay after playback
-                this.WindowState = WindowState.Normal;
-                this.Topmost = true; // Bring the window to the front
-                this.Activate(); // Ensure the window is active
-                this.Topmost = false; // Reset Topmost to allow other windows to be on top
-                BtnRecord.IsEnabled = true;
-                BtnPlay.IsEnabled = true;
-            }
+            HideGlow(); // Hide the glow overlay after playback
+            this.WindowState = WindowState.Normal;
+            this.Topmost = true; // Bring the window to the front
+            this.Activate(); // Ensure the window is active
+            this.Topmost = false; // Reset Topmost to allow other windows to be on top
+            BtnRecord.IsEnabled = true;
+            BtnPlay.IsEnabled = true;
+            BtnStop.IsEnabled = false;
+            
         }
 
         private void BtnSave_Click(object sender, RoutedEventArgs e)
@@ -492,6 +491,9 @@ namespace Ezmacro
                     {
                         MacroActions.Move(oldIndex, newIndex);
                         MacroDataGrid.SelectedItem = droppedData;
+                        _currentDropTargetRow.ClearValue(Border.BorderThicknessProperty);
+                        _currentDropTargetRow.ClearValue(Border.BorderBrushProperty);
+
                     }
                 }
             }
@@ -518,7 +520,8 @@ namespace Ezmacro
             if (_currentDropTargetRow != null && _currentDropTargetRow != targetRow)
             {
                 // Clear previous highlight
-                _currentDropTargetRow.BorderThickness = new Thickness(0);
+                _currentDropTargetRow.ClearValue(Border.BorderThicknessProperty);
+                _currentDropTargetRow.ClearValue(Border.BorderBrushProperty);
             }
 
             if (targetRow != null)
