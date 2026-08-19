@@ -17,12 +17,11 @@ namespace Ezmacro
         "settings.json"
     );
         public bool AutoMinimize { get; set; } = true;
-        public int PlaybackSpeedMultiplier { get; set; } = 1; // 1x speed by default
         public KeyCode RecordStopKey { get; set; } = KeyCode.VcF10;
         public KeyCode PlaybackKey { get; set; } = KeyCode.VcF11;
         public bool ContinuosPlayback { get; set; } = false;
         public bool MousetrackingEnabled { get; set; } = true;
-        public bool HideMouseMoves { get; set; } = false;
+        public bool HideMouseMoves { get; set; } = true;
         public long Samplingrate { get; set; } = 50; // Default sampling rate for mouse tracking
         public bool HideGlow {  get; set; } = false;
 
