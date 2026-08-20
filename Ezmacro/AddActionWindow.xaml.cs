@@ -50,7 +50,7 @@ namespace Ezmacro
                     CmbDetail.IsEnabled = true;
                     break;
 
-                case "MouseMove":
+                case "MouseSet":
                     CmbDetail.ItemsSource = null;
                     CmbDetail.IsEnabled = false;
                     break;

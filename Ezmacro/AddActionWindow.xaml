@@ -20,7 +20,7 @@
             <!-- Key/Button: enabled for everything except MouseMove (which has no key/button) -->
             <Style x:Key="KeyDetailSection" TargetType="Grid" BasedOn="{StaticResource DimmableSection}">
                 <Style.Triggers>
-                    <DataTrigger Binding="{Binding ElementName=CmbActionType, Path=SelectedItem}" Value="MouseMove">
+                    <DataTrigger Binding="{Binding ElementName=CmbActionType, Path=SelectedItem}" Value="MouseSet">
                         <Setter Property="IsEnabled" Value="False"/>
                     </DataTrigger>
                 </Style.Triggers>
@@ -36,7 +36,7 @@
                     <DataTrigger Binding="{Binding ElementName=CmbActionType, Path=SelectedItem}" Value="MouseRelease">
                         <Setter Property="IsEnabled" Value="True"/>
                     </DataTrigger>
-                    <DataTrigger Binding="{Binding ElementName=CmbActionType, Path=SelectedItem}" Value="MouseMove">
+                    <DataTrigger Binding="{Binding ElementName=CmbActionType, Path=SelectedItem}" Value="MouseSet">
                         <Setter Property="IsEnabled" Value="True"/>
                     </DataTrigger>
                 </Style.Triggers>
@@ -70,7 +70,7 @@
                         <sys:String>KeyRelease</sys:String>
                         <sys:String>MousePress</sys:String>
                         <sys:String>MouseRelease</sys:String>
-                        <sys:String>MouseMove</sys:String>
+                        <sys:String>MouseSet</sys:String>
                     </ComboBox>
                 </StackPanel>
 
