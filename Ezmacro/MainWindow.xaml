@@ -139,6 +139,7 @@
                                     <sys:String>KeyRelease</sys:String>
                                     <sys:String>MousePress</sys:String>
                                     <sys:String>MouseRelease</sys:String>
+                                    <sys:String>MouseSet</sys:String>
                                     <sys:String>MouseMove</sys:String>
                                 </x:Array>
                             </DataGridComboBoxColumn.ItemsSource>
