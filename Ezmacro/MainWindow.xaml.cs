@@ -7,6 +7,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using Microsoft.Win32;
 using SharpHook;
@@ -43,11 +44,37 @@ namespace Ezmacro
                 _overlay.Hide();
             }
         }
+        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            // Obtain handle for the WPF Window
+            IntPtr hwnd = new WindowInteropHelper(this).Handle;
+
+            // Register for Raw Input
+            RawInputReceiver.Register(hwnd);
+
+            // Hook into Windows Message Loop
+            HwndSource source = HwndSource.FromHwnd(hwnd);
+            source?.AddHook(WndProc);
+        }
+        private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+        {
+            if (RawInputReceiver.ProcessMessage(hwnd, msg, wParam, lParam, out int deltaX, out int deltaY))
+            {
+                if (deltaX != 0 || deltaY != 0)
+                {
+                    // Triggered even when 3D games lock/center the cursor
+                    OnMouseDeltaReceived(deltaX, deltaY);
+                }
+            }
+            return IntPtr.Zero;
+        }
         public MainWindow()
         {
             InitializeComponent();
             SetupDataGridFilter();
             Settings = MacroSettings.Load(); // Load settings from disk
+            Loaded += MainWindow_Loaded;
+
 
 
             // Bind our collection to the DataGrid UI
@@ -58,7 +85,7 @@ namespace Ezmacro
 
             _hook.MousePressed += OnGlobalMousePressed;
             _hook.MouseReleased += OnGlobalMouseReleased;
-            _hook.MouseMoved += OnGlobalMouseMoved;
+           
 
 
             Task.Run(() => _hook.Run());
@@ -80,30 +107,41 @@ namespace Ezmacro
 
             };
         }
-        private void OnGlobalMouseMoved(object sender, MouseHookEventArgs e)
+        
+
+
+        private int cumx = 0;
+        private int cumy = 0;
+        private void OnMouseDeltaReceived(int x, int y)
         {
-            // Optional: Handle mouse movement if needed
+            
             if (!_isRecording || !Settings.MousetrackingEnabled) return;
+            cumx += x;
+            cumy += y;
             if (!_mouseSampleTimer.IsRunning || _mouseSampleTimer.ElapsedMilliseconds >= Settings.Samplingrate)
             {
                 _mouseSampleTimer.Restart();
                 long elapsed = _stopwatch.ElapsedMilliseconds;
                 _stopwatch.Restart();
-                Application.Current.Dispatcher.Invoke(() =>
+                int deltaXToRecord = cumx;
+                int deltaYToRecord = cumy;
+                cumx = 0;
+                cumy = 0;
+                Application.Current.Dispatcher.InvokeAsync(() =>
                 {
                     MacroActions.Add(new MacroEvent
                     {
                         ActionType = "MouseMove",
-                        X = e.Data.X,
-                        Y = e.Data.Y,
+                        X = deltaXToRecord,
+                        Y = deltaYToRecord,
                         Delay = elapsed
                     });
                 });
+                
             }
-
-
-
+            
         }
+
         private void OnGlobalKeyPressed(object sender, KeyboardHookEventArgs e)
         {
             if (!_isRecording) { return; } // Ignore key presses if we're not recording
@@ -211,7 +249,16 @@ namespace Ezmacro
             });
         }
 
+        public (int X, int Y) GetCurrentCursorPosition()
+        {
+            if (MouseInputSimulator.GetCursorPos(out MouseInputSimulator.POINT point))
+            {
+                return (point.X, point.Y);
+            }
 
+            // Fallback if the call fails
+            return (0, 0);
+        }
         private async void BtnRecord_Click(object sender, RoutedEventArgs e)
         {
             await Application.Current.Dispatcher.Invoke(async () =>
@@ -224,6 +271,14 @@ namespace Ezmacro
                 ShowGlow(Colors.Red); // Show red glow during recording
                 _isRecording = true;
                 MacroActions.Clear();
+                var(x ,y) = GetCurrentCursorPosition();
+                MacroActions.Add(new MacroEvent
+                {
+                    ActionType = "MouseSet",
+                    X = x,
+                    Y = y,
+                    Delay = 0
+                });
                 _stopwatch.Restart();
             });
         }
@@ -349,6 +404,10 @@ namespace Ezmacro
                                 }
                             }
                             else if (action.ActionType == "MouseMove")
+                            {
+                                MouseInputSimulator.MoveMouseRelative(action.X, action.Y);
+                            }
+                            else if (action.ActionType == "MouseSet")
                             {
                                 simulator.SimulateMouseMovement((short)action.X, (short)action.Y);
                             }
