@@ -144,29 +144,6 @@ namespace Ezmacro
 
         private void OnGlobalKeyPressed(object sender, KeyboardHookEventArgs e)
         {
-            if (!_isRecording) { return; } // Ignore key presses if we're not recording
-            long elapsed = _stopwatch.ElapsedMilliseconds;
-            _stopwatch.Restart(); // Reset timer for the next sequential object
-
-            // Thread marshaling: Safely pass the data object to the Main UI Thread
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                // Instantiate a new data object (Instantiation) and populate its properties
-                MacroEvent keyEvent = new MacroEvent
-                {
-                    ActionType = "KeyPress",
-                    Detail = e.Data.KeyCode.ToString(),
-                    X = 0,
-                    Y = 0,
-                    Delay = elapsed
-                };
-
-                // Add the newly created object to our collection state
-                MacroActions.Add(keyEvent);
-            });
-        }
-        private void OnGlobalKeyReleased(object sender, KeyboardHookEventArgs e)
-        {
             if (e.Data.KeyCode == Settings.RecordStopKey && !_isPlaying)
             {
                 if (_isRecording)
@@ -193,6 +170,30 @@ namespace Ezmacro
                     return;
                 }
             }
+            if (!_isRecording) { return; } // Ignore key presses if we're not recording
+            long elapsed = _stopwatch.ElapsedMilliseconds;
+            _stopwatch.Restart(); // Reset timer for the next sequential object
+
+            // Thread marshaling: Safely pass the data object to the Main UI Thread
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                // Instantiate a new data object (Instantiation) and populate its properties
+                MacroEvent keyEvent = new MacroEvent
+                {
+                    ActionType = "KeyPress",
+                    Detail = e.Data.KeyCode.ToString(),
+                    X = 0,
+                    Y = 0,
+                    Delay = elapsed
+                };
+
+                // Add the newly created object to our collection state
+                MacroActions.Add(keyEvent);
+            });
+        }
+        private void OnGlobalKeyReleased(object sender, KeyboardHookEventArgs e)
+        {
+            
             if (!_isRecording) { return; } // Ignore key releases if we're not recording
             long elapsed = _stopwatch.ElapsedMilliseconds;
             _stopwatch.Restart();
