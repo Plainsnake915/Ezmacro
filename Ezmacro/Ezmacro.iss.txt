@@ -1,0 +1,36 @@
+[Setup]
+AppId={{D3F91B82-5A32-4E9A-8822-D119A2E0F12C}
+AppName=EzMacro
+AppVersion=1.0.0
+AppPublisher=Plainsnake915
+AppPublisherURL=https://github.com/Plainsnake915/EzMacro
+AppSupportURL=https://github.com/Plainsnake915/EzMacro/issues
+AppUpdatesURL=https://github.com/Plainsnake915/EzMacro/releases
+DefaultDirName={autopf}\EzMacro
+DefaultGroupName=EzMacro
+DisableProgramGroupPage=yes
+; Output location for the generated setup.exe
+OutputDir=.\InstallerOutput
+OutputBaseFilename=EzMacro-Setup-v1.0.0
+Compression=lzma2/ultra64
+SolidCompression=yes
+WizardStyle=modern
+PrivilegesRequired=admin
+
+[Languages]
+Name: "english"; MessagesFile: "compiler:Default.isl"
+
+[Tasks]
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+
+[Files]
+; Copy all published WPF app files into the installation directory
+Source: "C:\Users\rifat\source\repos\Ezmacro\Ezmacro\bin\Release\net8.0-windows\publish\win-x86\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+
+[Icons]
+Name: "{group}\EzMacro"; Filename: "{app}\EzMacro.exe"
+Name: "{group}\{cm:UninstallProgram,EzMacro}"; Filename: "{uninstallexe}"
+Name: "{autodesktop}\EzMacro"; Filename: "{app}\EzMacro.exe"; Tasks: desktopicon
+
+[Run]
+Filename: "{app}\EzMacro.exe"; Description: "{cm:LaunchProgram,EzMacro}"; Flags: nowait postinstall skipifsilent
