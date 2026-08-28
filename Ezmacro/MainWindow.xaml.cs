@@ -162,6 +162,7 @@ namespace Ezmacro
                 if (_isPlaying)
                 {
                     _isPlaying = false; // Stop playback if the designated key is released
+                    HideGlow();
                     return;
                 }
                 else
@@ -365,6 +366,7 @@ namespace Ezmacro
                         {
                             await Task.Delay((int)action.Delay);
                         }
+                         if (!_isPlaying) break; // Stop playback if the user has stopped it
 
                         try
                         {
