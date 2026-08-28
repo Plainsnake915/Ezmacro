@@ -18,15 +18,13 @@ namespace Ezmacro
     public partial class MainWindow : Window
     {
         // An ObservableCollection automatically updates the DataGrid UI when items change
-        public ObservableCollection<MacroEvent> MacroActions { get; set; } = new ObservableCollection<MacroEvent>();
+        public ObservableCollection<MacroEvent> MacroActions { get; private set; } = new ObservableCollection<MacroEvent>();
         private TaskPoolGlobalHook _hook;
-        private Stopwatch _stopwatch = new Stopwatch();
-        private Stopwatch _mouseSampleTimer = new Stopwatch();
-        private bool _isRecording = false;
-        private bool _isPlaying = false;
+        private InputService InputService;
+
         private GlowOverlayWindow _overlay;
         public MacroSettings Settings { get; set; } = new MacroSettings();
-        private void ShowGlow(Color color)
+        public void ShowGlow(Color color)
         {
             if(Settings.HideGlow) { return; }
             if (_overlay == null)
@@ -37,7 +35,7 @@ namespace Ezmacro
             _overlay.SetGlowColor(color);
             _overlay.Show();
         }
-        private void HideGlow()
+        public void HideGlow()
         {
             if (_overlay != null)
             {
@@ -63,7 +61,7 @@ namespace Ezmacro
                 if (deltaX != 0 || deltaY != 0)
                 {
                     // Triggered even when 3D games lock/center the cursor
-                    OnMouseDeltaReceived(deltaX, deltaY);
+                    InputService.OnMouseDeltaReceived(deltaX, deltaY);
                 }
             }
             return IntPtr.Zero;
@@ -73,6 +71,7 @@ namespace Ezmacro
             InitializeComponent();
             SetupDataGridFilter();
             Settings = MacroSettings.Load(); // Load settings from disk
+            InputService = new InputService(this);
             Loaded += MainWindow_Loaded;
 
 
@@ -80,11 +79,11 @@ namespace Ezmacro
             // Bind our collection to the DataGrid UI
             MacroDataGrid.ItemsSource = MacroActions;
             _hook = new TaskPoolGlobalHook();
-            _hook.KeyPressed += OnGlobalKeyPressed;
-            _hook.KeyReleased += OnGlobalKeyReleased;
+            _hook.KeyPressed += InputService.OnGlobalKeyPressed;
+            _hook.KeyReleased += InputService.OnGlobalKeyReleased;
 
-            _hook.MousePressed += OnGlobalMousePressed;
-            _hook.MouseReleased += OnGlobalMouseReleased;
+            _hook.MousePressed += InputService.OnGlobalMousePressed;
+            _hook.MouseReleased += InputService.OnGlobalMouseReleased;
            
 
 
@@ -107,149 +106,6 @@ namespace Ezmacro
 
             };
         }
-        
-
-
-        private int cumx = 0;
-        private int cumy = 0;
-        private void OnMouseDeltaReceived(int x, int y)
-        {
-            
-            if (!_isRecording || !Settings.MousetrackingEnabled) return;
-            cumx += x;
-            cumy += y;
-            if (!_mouseSampleTimer.IsRunning || _mouseSampleTimer.ElapsedMilliseconds >= Settings.Samplingrate)
-            {
-                _mouseSampleTimer.Restart();
-                long elapsed = _stopwatch.ElapsedMilliseconds;
-                _stopwatch.Restart();
-                int deltaXToRecord = cumx;
-                int deltaYToRecord = cumy;
-                cumx = 0;
-                cumy = 0;
-                Application.Current.Dispatcher.InvokeAsync(() =>
-                {
-                    MacroActions.Add(new MacroEvent
-                    {
-                        ActionType = "MouseMove",
-                        X = deltaXToRecord,
-                        Y = deltaYToRecord,
-                        Delay = elapsed
-                    });
-                });
-                
-            }
-            
-        }
-
-        private void OnGlobalKeyPressed(object sender, KeyboardHookEventArgs e)
-        {
-            if (e.Data.KeyCode == Settings.RecordStopKey && !_isPlaying)
-            {
-                if (_isRecording)
-                {
-                    BtnStop_Click(sender, null); // Stop recording if the designated key is released
-                    return;
-                }
-                else
-                {
-                    BtnRecord_Click(sender, null); // Start recording if the designated key is released
-                    return;
-                }
-            }
-            if (e.Data.KeyCode == Settings.PlaybackKey && !_isRecording)
-            {
-                if (_isPlaying)
-                {
-                    _isPlaying = false; // Stop playback if the designated key is released
-                    HideGlow();
-                    return;
-                }
-                else
-                {
-                    BtnPlay_Click(sender, null); // Start playback if the designated key is released
-                    return;
-                }
-            }
-            if (!_isRecording) { return; } // Ignore key presses if we're not recording
-            long elapsed = _stopwatch.ElapsedMilliseconds;
-            _stopwatch.Restart(); // Reset timer for the next sequential object
-
-            // Thread marshaling: Safely pass the data object to the Main UI Thread
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                // Instantiate a new data object (Instantiation) and populate its properties
-                MacroEvent keyEvent = new MacroEvent
-                {
-                    ActionType = "KeyPress",
-                    Detail = e.Data.KeyCode.ToString(),
-                    X = 0,
-                    Y = 0,
-                    Delay = elapsed
-                };
-
-                // Add the newly created object to our collection state
-                MacroActions.Add(keyEvent);
-            });
-        }
-        private void OnGlobalKeyReleased(object sender, KeyboardHookEventArgs e)
-        {
-            
-            if (!_isRecording) { return; } // Ignore key releases if we're not recording
-            long elapsed = _stopwatch.ElapsedMilliseconds;
-            _stopwatch.Restart();
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                MacroEvent keyUpEvent = new MacroEvent
-                {
-                    ActionType = "KeyRelease",
-                    Detail = e.Data.KeyCode.ToString(),
-                    X = 0,
-                    Y = 0,
-                    Delay = elapsed
-                };
-                MacroActions.Add(keyUpEvent);
-            });
-        }
-
-        private void OnGlobalMousePressed(object sender, MouseHookEventArgs e)
-        {
-            if (!_isRecording) { return; }
-            long elapsed = _stopwatch.ElapsedMilliseconds;
-            _stopwatch.Restart();
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                MacroEvent mouseDownEvent = new MacroEvent
-                {
-                    ActionType = "MousePress",
-                    Detail = e.Data.Button.ToString(),
-                    X = e.Data.X,
-                    Y = e.Data.Y,
-                    Delay = elapsed
-                };
-                MacroActions.Add(mouseDownEvent);
-            });
-        }
-
-        private void OnGlobalMouseReleased(object sender, MouseHookEventArgs e)
-        {
-
-            if (!_isRecording) { return; }
-            long elapsed = _stopwatch.ElapsedMilliseconds;
-            _stopwatch.Restart();
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                MacroEvent mouseUpEvent = new MacroEvent
-                {
-                    ActionType = "MouseRelease",
-                    Detail = e.Data.Button.ToString(),
-                    X = e.Data.X,
-                    Y = e.Data.Y,
-                    Delay = elapsed
-                };
-                MacroActions.Add(mouseUpEvent);
-            });
-        }
 
         public (int X, int Y) GetCurrentCursorPosition()
         {
@@ -261,7 +117,9 @@ namespace Ezmacro
             // Fallback if the call fails
             return (0, 0);
         }
-        private async void BtnRecord_Click(object sender, RoutedEventArgs e)
+
+
+        public async void BtnRecord_Click(object sender, RoutedEventArgs e)
         {
             await Application.Current.Dispatcher.Invoke(async () =>
             {
@@ -271,7 +129,7 @@ namespace Ezmacro
                 await Task.Delay(100); // Small delay to ensure the button state updates before recording starts
                 if (Settings.AutoMinimize) this.WindowState = WindowState.Minimized;
                 ShowGlow(Colors.Red); // Show red glow during recording
-                _isRecording = true;
+                StateManager._isRecording = true;
                 MacroActions.Clear();
                 var(x ,y) = GetCurrentCursorPosition();
                 MacroActions.Add(new MacroEvent
@@ -281,11 +139,11 @@ namespace Ezmacro
                     Y = y,
                     Delay = 0
                 });
-                _stopwatch.Restart();
+                StateManager._stopwatch.Restart();
             });
         }
 
-        private async void BtnStop_Click(object sender, RoutedEventArgs e)
+        public async void BtnStop_Click(object sender, RoutedEventArgs e)
         {
             await Application.Current.Dispatcher.Invoke(async () =>
             {
@@ -293,20 +151,24 @@ namespace Ezmacro
                 BtnStop.IsEnabled = false;
                 BtnPlay.IsEnabled = true;
                 HideGlow(); // Hide the glow overlay when recording stops
-                _isRecording = false;
-                _stopwatch.Stop();
+                StateManager._isRecording = false;
+                long elapsed = StateManager._stopwatch.ElapsedMilliseconds;
+                StateManager._stopwatch.Stop();
                 this.WindowState = WindowState.Normal;
                 this.Topmost = true; // Bring the window to the front
                 this.Activate(); // Ensure the window is active
                 this.Topmost = false; // Reset Topmost to allow other windows to be on top
-                if (_isPlaying)
+                if (StateManager._isPlaying)
                 {
-                    _isPlaying = false; // Stop playback if the user has stopped it
+                    StateManager._isPlaying = false; // Stop playback if the user has stopped it
                     return;
                 }
-                int lastIndex = MacroActions.Count - 1;
-                MacroActions[lastIndex].ActionType = "wait";
-                MacroActions[lastIndex].Detail = "delay";
+                MacroActions.Add(new MacroEvent
+                {
+                    ActionType = "wait",
+                    Detail = "delay",
+                    Delay = elapsed
+                });
                 MacroDataGrid.Items.Refresh(); // Refresh the DataGrid to show the updated last row
             });
 
@@ -315,7 +177,7 @@ namespace Ezmacro
         }
 
 
-        private async void BtnPlay_Click(object sender, RoutedEventArgs e)
+        public async void BtnPlay_Click(object sender, RoutedEventArgs e)
         {
             await Application.Current.Dispatcher.Invoke(async () =>
             {
@@ -332,7 +194,7 @@ namespace Ezmacro
 
 
                 if (Settings.AutoMinimize) this.WindowState = WindowState.Minimized;
-                _isPlaying = true;
+                StateManager._isPlaying = true;
                 await Task.Delay(300);
                 ShowGlow(Colors.Green); // Show green glow during playback
                 playBack();
@@ -356,17 +218,17 @@ namespace Ezmacro
 
             await Task.Run(async () =>
             {
-                while (_isPlaying)
+                while (StateManager._isPlaying)
                 {
                     foreach (var action in MacroActions)
                     {
-                        if (!_isPlaying) break; // Stop playback if the user has stopped it
+                        if (!StateManager._isPlaying) break; // Stop playback if the user has stopped it
 
                         if (action.Delay > 0)
                         {
                             await Task.Delay((int)action.Delay);
                         }
-                         if (!_isPlaying) break; // Stop playback if the user has stopped it
+                         if (!StateManager._isPlaying) break; // Stop playback if the user has stopped it
 
                         try
                         {
@@ -420,7 +282,7 @@ namespace Ezmacro
                             Debug.WriteLine($"Failed to simulate action: {ex.Message}");
                         }
                     }
-                    if (!Settings.ContinuosPlayback) _isPlaying = false;
+                    if (!Settings.ContinuosPlayback) StateManager._isPlaying = false;
                 }
             });
            
