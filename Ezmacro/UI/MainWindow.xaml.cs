@@ -1,4 +1,5 @@
 ﻿using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
@@ -84,12 +85,13 @@ namespace Ezmacro
 
             _hook.MousePressed += InputService.OnGlobalMousePressed;
             _hook.MouseReleased += InputService.OnGlobalMouseReleased;
-           
+            
 
 
             Task.Run(() => _hook.Run());
 
         }
+       
         private void SetupDataGridFilter()
         {
             ICollectionView view = CollectionViewSource.GetDefaultView(MacroActions);

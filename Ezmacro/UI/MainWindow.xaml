@@ -141,6 +141,7 @@
                                     <sys:String>MouseRelease</sys:String>
                                     <sys:String>MouseSet</sys:String>
                                     <sys:String>MouseMove</sys:String>
+                                    <sys:String>wait</sys:String>
                                 </x:Array>
                             </DataGridComboBoxColumn.ItemsSource>
                         </DataGridComboBoxColumn>
